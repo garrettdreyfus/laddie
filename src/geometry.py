@@ -4,155 +4,154 @@ import sys
 
 def read_geom(object):
     #Read input file
+    #try:
+    ds = xr.open_dataset(object.geomfile)
 
-    try:
-        ds = xr.open_dataset(object.geomfile)
-
-        #Check for time dimension
-        if len(ds.dims) >2:
-            if object.maskoption == "ISOMIP":
-                ds = ds.isel(t=object.geomyear)
-            elif object.maskoption in ["UFEMISM","IMAUICE"]:
-                ds = ds.isel(time=object.geomyear)
-            object.print2log(f'selecting geometry time index {object.geomyear}')
-
-        #Get grid cell size
-        object.dx = ds.x[1]-ds.x[0]
-        object.dy = ds.y[1]-ds.y[0]
-
-        #Check order of x and y
-        if object.dx<0:
-            object.print2log('inverting x-coordinates')
-            ds = ds.reindex(x=list(reversed(ds.x)))
-            object.dx = -object.dx
-        if object.dy<0:
-            object.print2log('inverting y-coordinates')
-            ds = ds.reindex(y=list(reversed(ds.y)))
-            object.dy = -object.dy
-
-        #If required, coarsen grid by given factor
-        if object.coarsen>1:
-            ds = apply_coarsen(object,ds)
-
-        #If required, include longitude and latitude
-        if object.lonlat:
-            ds = add_lonlat(object,ds,object.projection)
-
-        #Read variables
-        object.dx = object.dx.values
-        object.dy = object.dy.values
-        object.x_full    = ds.x.values
-        object.y_full    = ds.y.values
-        object.xu_full   = object.x_full + 0.5*object.dx
-        object.yv_full   = object.y_full + 0.5*object.dy
-
-        object.nx_full = len(object.x_full)
-        object.ny_full = len(object.y_full)
-        
-        #Try to read draft
-        gotdraft = False
-        for v in ['draft','Hib','zb','lowerSurface']:
-            if v in ds.variables:
-                object.zb_full = ds[v].values
-                gotdraft = True
-                object.print2log(f"Got ice shelf draft from '{v}'")
-
-        #Get ice thickness to compute mask and, if needed, draft
-        if gotdraft == False or object.maskoption in ["UFEMISM","IMAUICE"]:
-            gotthick = False
-            #Get thickness
-            for v in ['thickness','Hi']:
-                if v in ds.variables:
-                    object.H = ds[v].values
-                    gotthick = True
-
-        #If reading draft failed, try to get draft from thickness and surface
-        if gotdraft == False:
-            gotsurf  = False
-            #Get surface
-            for v in ['surface','Hs']:
-                if v in ds.variables:
-                    object.zs = ds[v].values
-                    gotsurf = True
-            if gotthick and gotsurf:
-                #Extract draft
-                object.zb_full = object.zs-object.H
-                object.H_full = object.H
-                gotdraft = True
-                object.print2log(f"Got ice shelf draft from thickness and surface")
-            else:
-                print(f"INPUT ERROR: Could not find or extract ice shelf draft from input geometry. Check variable names.")
-                print(f"Need either draft ('draft', 'Hb','zb',or 'lowerSurface') or thickness ('thickness' or 'Hi') and surface ('surface' or 'Hs')")
-                sys.exit()
-
-        #Try to read bed if requested for saving or needed to compute mask
-        if object.save_B or object.maskoption in ["UFEMISM","IMAUICE"]:
-            gotbed = False
-            for v in ['bed','Hb','bedrockTopography']:
-                if v in ds.variables:
-                    object.B = ds[v].values
-                    gotbed = True
-            if gotbed == False:
-                if object.maskoption in ["UFEMISM","IMAUICE"]:
-                    print(f"INPUT ERROR: Could not find Bed in input file, needed to compute mask. Check variable names")
-                    sys.exit()
-                object.save_B = False
-                object.print2log("Warning: no Bed included in input file, so omitted from output")
-
-        #Read mask and convert to BedMachine standard (0: ocean, 1 and/or 2: grounded, 3: ice shelf)
-        if object.maskoption == "BM":
-            object.mask_full = ds.mask.values
+    #Check for time dimension
+    if len(ds.dims) >2:
+        if object.maskoption == "ISOMIP":
+            ds = ds.isel(t=object.geomyear)
         elif object.maskoption in ["UFEMISM","IMAUICE"]:
-            object.mask_full = np.where(object.H>0,1,0) #Separate ice-covered by ice free
-            object.mask_full = np.where(np.logical_and(object.mask_full==0,object.B>0),2,object.mask_full) #Define ice-free land. Remaining zeros are ocean
-            buff = .1 #.1
-            object.mask_full = np.where(np.logical_and(object.mask_full*object.B<0,object.zb_full>object.B+buff),3,object.mask_full) #Define ice shelves
-        elif object.maskoption == "ISOMIP":
-            object.mask_full = ds.groundedMask.values
-            object.mask_full = np.where(ds.floatingMask,3,object.mask_full)
+            ds = ds.isel(time=object.geomyear)
+        object.print2log(f'selecting geometry time index {object.geomyear}')
 
-        ds.close()
+    #Get grid cell size
+    object.dx = ds.x[1]-ds.x[0]
+    object.dy = ds.y[1]-ds.y[0]
 
-        #Cut out minimal region
-        if object.cutdomain:
-            cut_domain(object)
+    #Check order of x and y
+    if object.dx<0:
+        object.print2log('inverting x-coordinates')
+        ds = ds.reindex(x=list(reversed(ds.x)))
+        object.dx = -object.dx
+    if object.dy<0:
+        object.print2log('inverting y-coordinates')
+        ds = ds.reindex(y=list(reversed(ds.y)))
+        object.dy = -object.dy
+
+    #If required, coarsen grid by given factor
+    if object.coarsen>1:
+        ds = apply_coarsen(object,ds)
+
+    #If required, include longitude and latitude
+    if object.lonlat:
+        ds = add_lonlat(object,ds,object.projection)
+
+    #Read variables
+    object.dx = object.dx.values
+    object.dy = object.dy.values
+    object.x_full    = ds.x.values
+    object.y_full    = ds.y.values
+    object.xu_full   = object.x_full + 0.5*object.dx
+    object.yv_full   = object.y_full + 0.5*object.dy
+
+    object.nx_full = len(object.x_full)
+    object.ny_full = len(object.y_full)
+    
+    #Try to read draft
+    gotdraft = False
+    for v in ['draft','Hib','zb','lowerSurface']:
+        if v in ds.variables:
+            object.zb_full = ds[v].values
+            gotdraft = True
+            object.print2log(f"Got ice shelf draft from '{v}'")
+
+    #Get ice thickness to compute mask and, if needed, draft
+    if gotdraft == False or object.maskoption in ["UFEMISM","IMAUICE"]:
+        gotthick = False
+        #Get thickness
+        for v in ['thickness','Hi']:
+            if v in ds.variables:
+                object.H = ds[v].values
+                gotthick = True
+
+    #If reading draft failed, try to get draft from thickness and surface
+    if gotdraft == False:
+        gotsurf  = False
+        #Get surface
+        for v in ['surface','Hs']:
+            if v in ds.variables:
+                object.zs = ds[v].values
+                gotsurf = True
+        if gotthick and gotsurf:
+            #Extract draft
+            object.zb_full = object.zs-object.H
+            object.H_full = object.H
+            gotdraft = True
+            object.print2log(f"Got ice shelf draft from thickness and surface")
         else:
-            object.mask = object.mask_full.copy()
-            object.zb   = object.zb_full.copy()
-            object.x    = object.x_full.copy()
-            object.y    = object.y_full.copy()
-            object.imin = 0
-            object.jmin = 0
-            object.imax = object.nx_full-1
-            object.jmax = object.ny_full-1
-            object.nx   = len(object.x)
-            object.ny   = len(object.y)
+            print(f"INPUT ERROR: Could not find or extract ice shelf draft from input geometry. Check variable names.")
+            print(f"Need either draft ('draft', 'Hb','zb',or 'lowerSurface') or thickness ('thickness' or 'Hi') and surface ('surface' or 'Hs')")
+            sys.exit()
 
-        #Add boundaries here to prevent effects of periodic boundary conditions
-        add_border(object)            
+    #Try to read bed if requested for saving or needed to compute mask
+    if object.save_B or object.maskoption in ["UFEMISM","IMAUICE"]:
+        gotbed = False
+        for v in ['bed','Hb','bedrockTopography']:
+            if v in ds.variables:
+                object.B = ds[v].values
+                gotbed = True
+        if gotbed == False:
+            if object.maskoption in ["UFEMISM","IMAUICE"]:
+                print(f"INPUT ERROR: Could not find Bed in input file, needed to compute mask. Check variable names")
+                sys.exit()
+            object.save_B = False
+            object.print2log("Warning: no Bed included in input file, so omitted from output")
 
-        #Apply calving threshold
-        if object.calvthresh>0:
-            try:
-                ncalv = sum(sum(np.logical_and(object.mask==3,object.H<object.calvthresh)))
-                object.mask = np.where(np.logical_and(object.mask==3,object.H<object.calvthresh),0,object.mask)
-                object.print2log(f"Removed {ncalv} grid points with ice thickness below than {object.calvthresh} m")
-            except:
-                draftlim = -object.rhoi/object.rho0*object.calvthresh
-                ncalv = sum(sum(np.logical_and(object.mask==3,object.zb>draftlim)))
-                object.mask = np.where(np.logical_and(object.mask==3,object.zb>draftlim),0,object.mask)
-                object.print2log(f"Removed {ncalv} grid points with draft shallower than {draftlim} m")
+    #Read mask and convert to BedMachine standard (0: ocean, 1 and/or 2: grounded, 3: ice shelf)
+    if object.maskoption == "BM":
+        object.mask_full = ds.mask.values
+    elif object.maskoption in ["UFEMISM","IMAUICE"]:
+        object.mask_full = np.where(object.H>0,1,0) #Separate ice-covered by ice free
+        object.mask_full = np.where(np.logical_and(object.mask_full==0,object.B>0),2,object.mask_full) #Define ice-free land. Remaining zeros are ocean
+        buff = .1 #.1
+        object.mask_full = np.where(np.logical_and(object.mask_full*object.B<0,object.zb_full>object.B+buff),3,object.mask_full) #Define ice shelves
+    elif object.maskoption == "ISOMIP":
+        object.mask_full = ds.groundedMask.values
+        object.mask_full = np.where(ds.floatingMask,3,object.mask_full)
 
-        #Remove icebergs
-        if object.removebergs:
-            remove_icebergs(object)
+    ds.close()
 
-        #Set draft to 0 at new ocean grid points
-        object.zb = np.where(object.mask==0,0,object.zb)
+    #Cut out minimal region
+    if object.cutdomain:
+        cut_domain(object)
+    else:
+        object.mask = object.mask_full.copy()
+        object.zb   = object.zb_full.copy()
+        object.x    = object.x_full.copy()
+        object.y    = object.y_full.copy()
+        object.imin = 0
+        object.jmin = 0
+        object.imax = object.nx_full-1
+        object.jmax = object.ny_full-1
+        object.nx   = len(object.x)
+        object.ny   = len(object.y)
 
-    except:
-        print(f"INPUT ERROR, cannot read geometry file {object.geomfile}. Check whether it exists and contains the correct variables")
-        sys.exit()
+    #Add boundaries here to prevent effects of periodic boundary conditions
+    add_border(object)            
+
+    #Apply calving threshold
+    if object.calvthresh>0:
+        try:
+            ncalv = sum(sum(np.logical_and(object.mask==3,object.H<object.calvthresh)))
+            object.mask = np.where(np.logical_and(object.mask==3,object.H<object.calvthresh),0,object.mask)
+            object.print2log(f"Removed {ncalv} grid points with ice thickness below than {object.calvthresh} m")
+        except:
+            draftlim = -object.rhoi/object.rho0*object.calvthresh
+            ncalv = sum(sum(np.logical_and(object.mask==3,object.zb>draftlim)))
+            object.mask = np.where(np.logical_and(object.mask==3,object.zb>draftlim),0,object.mask)
+            object.print2log(f"Removed {ncalv} grid points with draft shallower than {draftlim} m")
+
+    #Remove icebergs
+    if object.removebergs:
+        remove_icebergs(object)
+
+    #Set draft to 0 at new ocean grid points
+    object.zb = np.where(object.mask==0,0,object.zb)
+
+    #except:
+        ##print(f"INPUT ERROR, cannot read geometry file {object.geomfile}. Check whether it exists and contains the correct variables")
+        #sys.exit()
 
     object.res = (object.x[1]-object.x[0])/1000
     object.print2log(f"Finished reading geometry {object.geomfile} at resolution {object.res} km. All good")

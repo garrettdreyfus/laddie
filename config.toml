@@ -9,7 +9,8 @@ saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
-filename = "./input/Ocean2.nc"  # File containing geometry input
+filename = "./input/Ocean2_input_geom_v1.01.nc"  # File containing geometry input
+maskoption = "ISOMIP"                # Choice for mask definition, choose from 'BM', 'UFEMISM', 'IMAUICE', and 'ISOMIP'
 geomyear = false			# Time index of geometry input
 lonlat = false               # Include longitude latitude in output files
 projection = "epsg:3031"  # Projection to use for computing longitude, latitude
@@ -43,6 +44,7 @@ logfile = "log.txt" # Log file
 
 [Initialisation]
 Dinit = 10.0       # [m]         Initial uniform thickness D
+fromrestart = false    # Try starting from an existing restart file
 
 [Parameters]
 #External forcing
