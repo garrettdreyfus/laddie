@@ -12,6 +12,39 @@ def lapT(object,var):
     
     return tN+tS+tE+tW
 
+def lapU2(object):
+    """Laplacian operator for DU"""
+
+    #Get D on U-grid
+    Dcent = object.D20ip*object.tmask
+    var = object.U2[0,:,:]
+    AA = object.slip*Dcent*var/object.dy**2
+
+    #Operator at all four sides
+    tN = jp_t(object,Dcent)                 * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-object.ocnym1) - AA*object.grdNu
+    tS = jm_t(object,Dcent)                 * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-object.ocnyp1) - AA*object.grdSu  
+    tE = np.roll(object.D2[0,:,:],-1,axis=1) * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-object.ocnxm1)
+    tW = object.D2[0,:,:]                    * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-object.ocn   )
+    
+    return tN+tS+tE+tW
+
+def lapV2(object):
+    """Laplacian operator for DV"""
+
+    #Get D on V-grid
+    Dcent = object.D20jp*object.tmask
+    var = object.V2[0,:,:]
+    AA = object.slip*Dcent*var/object.dx**2
+    
+    #Operator on all four sides
+    tN = np.roll(object.D2[0,:,:],-1,axis=0) * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-object.ocnym1) 
+    tS = object.D2[0,:,:]                    * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-object.ocn   )
+    tE = ip_t(object,Dcent)                 * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-object.ocnxm1) - AA*object.grdEv
+    tW = im_t(object,Dcent)                 * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-object.ocnxp1) - AA*object.grdWv  
+    
+    return tN+tS+tE+tW
+
+
 def lapU(object):
     """Laplacian operator for DU"""
 
@@ -60,6 +93,39 @@ def convT(object,var):
         tE = - (object.Upos*var                      + object.Uneg   *np.roll(var,-1,axis=1)) / object.dx * object.umask
         tW =   (object.Uxp1pos*np.roll(var,1,axis=1) + object.Uxp1neg*var                   ) / object.dx * object.umaskxp1               
     return tN+tS+tE+tW
+
+def convU2(object):
+    """Convergence for DU"""
+    
+    #Get D at north, south, east, west points of U-grid
+    DN = div0((object.D2[1,:,:] + object.D2xm1 + object.D2ym1 + object.D2xm1ym1),(object.tmask + object.tmaskxm1 + object.tmaskym1 + object.tmaskxm1ym1))
+    DS = div0((object.D2[1,:,:] + object.D2xm1 + object.D2yp1 + object.D2xm1yp1),(object.tmask + object.tmaskxm1 + object.tmaskyp1 + object.tmaskxm1yp1))
+    DE = object.D2xm1     + object.ocnxm1 * object.D2[1,:,:]
+    DW = object.D2[1,:,:] + object.ocn    * object.D2xm1
+    
+    tN = -DN *        object.V2ip           *(object.U2jp -    object.slip  * object.U2[1,:,:] * object.grdNu ) /object.dy
+    tS =  DS *np.roll(object.V2ip,1,axis=0) *(object.U2jm -    object.slip  * object.U2[1,:,:] * object.grdSu ) /object.dy
+    tE = -DE *        object.U2ip           *(object.U2ip - (1-object.signU2)* object.U2[1,:,:] * object.ocnxm1) /object.dx
+    tW =  DW *        object.U2im           *(object.U2im -    object.signU2 * object.U2[1,:,:] * object.ocn   ) /object.dx
+    
+    return tN+tS+tE+tW
+
+def convV2(object):
+    """Convergence for DV"""
+    
+    #Get D at north, south, east, west points of V-grid
+    DE = div0((object.D2[1,:,:] + object.D2ym1 + object.D2xm1 + object.D2xm1ym1),(object.tmask + object.tmaskym1 + object.tmaskxm1 + object.tmaskxm1ym1))
+    DW = div0((object.D2[1,:,:] + object.D2ym1 + object.D2xp1 + object.D2xp1ym1),(object.tmask + object.tmaskym1 + object.tmaskxp1 + object.tmaskxp1ym1))
+    DN = object.D2ym1     + object.ocnym1 * object.D2[1,:,:]
+    DS = object.D2[1,:,:] + object.ocn    * object.D2ym1 
+    
+    tN = -DN *        object.V2jp           *(object.V2jp - (1-object.signV2)* object.V2[1,:,:] * object.ocnym1) /object.dy
+    tS =  DS *        object.V2jm           *(object.V2jm -    object.signV2 * object.V2[1,:,:] * object.ocn   ) /object.dy
+    tE = -DE *        object.U2jp           *(object.V2ip -    object.slip  * object.V2[1,:,:] * object.grdEv ) /object.dx
+    tW =  DW *np.roll(object.U2jp,1,axis=1) *(object.V2im -    object.slip  * object.V2[1,:,:] * object.grdWv ) /object.dx
+    
+    return tN+tS+tE+tW    
+
 
 def convU(object):
     """Convergence for DU"""
@@ -226,6 +292,7 @@ def update_entrainment(object):
 
     #Additional entrainment to prevent D<minD
     object.convD = convT(object,object.D[1,:,:])
+    object.convD2 = convT(object,object.D2[1,:,:])
     object.ent2 = np.maximum(0,(object.minD-object.D[0,:,:])/(2*object.dt)-(object.convD+object.melt+object.entr-object.detr)) *object.tmask
 
     #Net entrainment
@@ -269,13 +336,53 @@ def prepare_convergence(object):
     object.signU = np.sign(object.U[1,:,:])
     object.signV = np.sign(object.V[1,:,:])
 
+    object.D2ym1    = np.roll(        object.D2[1,:,:]*object.tmask,-1,axis=0)
+    object.D2yp1    = np.roll(        object.D2[1,:,:]*object.tmask, 1,axis=0)
+    object.D2xm1    = np.roll(        object.D2[1,:,:]*object.tmask,-1,axis=1)
+    object.D2xp1    = np.roll(        object.D2[1,:,:]*object.tmask, 1,axis=1)
+    object.D2xm1ym1 = np.roll(np.roll(object.D2[1,:,:]*object.tmask,-1,axis=1),-1,axis=0)
+    object.D2xp1ym1 = np.roll(np.roll(object.D2[1,:,:]*object.tmask, 1,axis=1),-1,axis=0)
+    object.D2xm1yp1 = np.roll(np.roll(object.D2[1,:,:]*object.tmask,-1,axis=1), 1,axis=0)
+
+    object.V2yp1    = np.roll(object.V2[1,:,:],1,axis=0)  
+    object.U2xp1    = np.roll(object.U2[1,:,:],1,axis=1)    
+
+    object.U2pos = np.maximum(object.U2[1,:,:],0)
+    object.U2neg = np.minimum(object.U2[1,:,:],0)
+    object.V2pos = np.maximum(object.V2[1,:,:],0)
+    object.V2neg = np.minimum(object.V2[1,:,:],0)
+
+    object.V2yp1pos = np.maximum(object.V2yp1,0)
+    object.V2yp1neg = np.minimum(object.V2yp1,0)
+    object.U2xp1pos = np.maximum(object.U2xp1,0)
+    object.U2xp1neg = np.minimum(object.U2xp1,0)
+
+    object.V2ip = ip_v(object,object.V2[1,:,:])
+    object.V2im = im_v(object,object.V2[1,:,:])
+    object.U2ip = ip_u(object,object.U2[1,:,:])
+    object.U2im = im_u(object,object.U2[1,:,:])
+
+    object.V2jp = jp_v(object,object.V2[1,:,:])
+    object.V2jm = jm_v(object,object.V2[1,:,:])
+    object.U2jp = jp_u(object,object.U2[1,:,:])
+    object.U2jm = jm_u(object,object.U2[1,:,:])
+
+    object.signU2 = np.sign(object.U2[1,:,:])
+    object.signV2 = np.sign(object.V2[1,:,:])
+
+
     return
 
 def prepare_laplacian(object):
 
-    object.D0ip = ip_t(object,object.D[0,:,:])
-    object.D0im = im_t(object,object.D[0,:,:])    
-    object.D0jp = jp_t(object,object.D[0,:,:])
-    object.D0jm = jm_t(object,object.D[0,:,:]) 
+    object.D0ip = ip_t(object,object.D2[0,:,:])
+    object.D0im = im_t(object,object.D2[0,:,:])    
+    object.D0jp = jp_t(object,object.D2[0,:,:])
+    object.D0jm = jm_t(object,object.D2[0,:,:]) 
+
+    object.D20ip = ip_t(object,object.D2[0,:,:])
+    object.D20im = im_t(object,object.D2[0,:,:])    
+    object.D20jp = jp_t(object,object.D2[0,:,:])
+    object.D20jm = jm_t(object,object.D2[0,:,:]) 
 
     return

@@ -139,6 +139,7 @@ def read_config(object):
     object.f        = tryread(object,"Parameters","f",float)
     object.rhofw    = tryread(object,"Parameters","rhofw",float,(0,1e20))
     object.rho0     = tryread(object,"Parameters","rho0",float,(0,1e20))
+    object.rho02    = tryread(object,"Parameters","rho02",float,(0,1e20))
     object.rhoi     = tryread(object,"Parameters","rhoi",float,(0,1e20))
     if object.usegamtfix:
         object.gamTfix  = tryread(object,"Parameters","gamTfix",float,(0,1e20))
@@ -384,9 +385,14 @@ def initialise_vars(object):
     """Initialise variables, either from a restart file or from scratch"""
 
     #Major variables. Three arrays for storage of previous timestep, current timestep, and next timestep
+
     object.U = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
+    object.RL = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
+    object.U2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.V = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
+    object.V2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.D = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
+    object.D2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.T = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.S = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     
@@ -395,6 +401,11 @@ def initialise_vars(object):
     
     #Remove positive values of ice shelf draft. Set shallowest ice shelf draft to 1 meters
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
+
+    #For rigid lid magic
+    object.Ustar = np.zeros((object.ny+2,object.nx+2)).astype('float64')
+    object.Vstar = np.zeros((object.ny+2,object.nx+2)).astype('float64')
+    object.TWterm = np.zeros((object.ny+2,object.nx+2)).astype('float64')
     
     #Draft dz/dx and dz/dy on t-grid
     object.dzdx = np.gradient(object.zb,object.dx,axis=1)

@@ -78,6 +78,7 @@ Ti        = -25       # [degC]      Ice shelf temperature
 f         = -1.37e-4  # [1/s]       Coriolis parameter
 rhofw     = 1000.0     # [kg/m^3]    Density of freshwater
 rho0      = 1028.0     # [kg/m^3]    Reference density of seawater 
+rho02      = 1029.0     # [kg/m^3]    Reference density of seawater 
 rhoi      = 910.0      # [kg/m^3]    Density of ice
 gamTfix   = 0.00018    # []          Turbulent exchange coefficient. Used only if usegamtfix = true
 #Tuning
