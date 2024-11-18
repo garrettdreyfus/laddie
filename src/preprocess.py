@@ -6,6 +6,7 @@ import datetime as dt
 from integrate import updatesecondary,integrate
 from tools import tryread, extrapolate_initvals
 from physics import update_ambientfields
+from pyro.multigrid import MG
 
 def create_rundir(object,configfile):
     """Create run directory and logfile"""
@@ -123,6 +124,7 @@ def read_config(object):
     object.borderS        = tryread(object,"Options","border_S",int,[0,1],default=1)
     object.borderE        = tryread(object,"Options","border_E",int,[0,1],default=1)
     object.borderW        = tryread(object,"Options","border_W",int,[0,1],default=1)
+    object.pressure_solves=0
 
     #Filenames
     object.fromrestart      = tryread(object,"Initialisation","fromrestart",bool)
@@ -405,8 +407,10 @@ def initialise_vars(object):
     #For rigid lid magic
     object.Ustar = np.zeros((object.ny+2,object.nx+2)).astype('float64')
     object.Vstar = np.zeros((object.ny+2,object.nx+2)).astype('float64')
+    object.Ustar2 = np.zeros((object.ny+2,object.nx+2)).astype('float64')
+    object.Vstar2 = np.zeros((object.ny+2,object.nx+2)).astype('float64')
     object.TWterm = np.zeros((object.ny+2,object.nx+2)).astype('float64')
-    
+ 
     #Draft dz/dx and dz/dy on t-grid
     object.dzdx = np.gradient(object.zb,object.dx,axis=1)
     object.dzdy = np.gradient(object.zb,object.dy,axis=0)
@@ -484,7 +488,14 @@ def init_from_scratch(object):
     update_ambientfields(object)
 
     #Initialise thickness D
+    object.umask[:,-20:]=0
+    object.H = object.zb-object.B
+    object.B[object.H<10]=object.zb[object.H<10]-10
+    object.B[:]=object.zb-20
     object.D += object.Dinit*object.tmask
+    #object.D[1][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
+    #object.D[2][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
+    #object.D[0][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
 
     #Initialise temperature and salinity
     for n in range(3):
@@ -637,10 +648,10 @@ def prepare_output(object):
         object.dsav['zb'].attrs['units'] = 'm'    
 
     #Bedrock B
-    if object.save_B:
-        object.dsav['B'] = (['y','x'], object.B)
-        object.dsav['B'].attrs['name'] = 'Bedrock depth'
-        object.dsav['B'].attrs['units'] = 'm'  
+    #if object.save_B:
+        #object.dsav['B'] = (['y','x'], object.B)
+        #object.dsav['B'].attrs['name'] = 'Bedrock depth'
+        #object.dsav['B'].attrs['units'] = 'm'  
 
     #Add attributes
     object.dsav.attrs['model_name'] = 'LADDIE'
@@ -698,8 +709,8 @@ def prepare_output(object):
     object.dsre['S']     = (['n','y','x'], object.Sre)
 
     #Bedrock not currently used, but may be used in the future, so saving it as well
-    if object.save_B:
-        object.dsre['B'] = (['y','x'], object.B)
+    #if object.save_B:
+        #$object.dsre['B'] = (['y','x'], object.B)
     object.dsre.attrs['name_model'] = 'LADDIE'
     object.dsre.attrs['model_version'] = object.modelversion
 

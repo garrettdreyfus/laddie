@@ -125,4 +125,4 @@ convtime  = 10000      # [s]         Used for convop = 2 | Restoring time scale 
 
 [Output]
 #Choose variables to save
-save_B    = false
+save_B    = true

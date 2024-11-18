@@ -175,7 +175,8 @@ def cut_domain(object):
     #Cut out region
     object.mask = object.mask_full[object.jmin:object.jmax+1,object.imin:object.imax+1]
     object.zb   = object.zb_full[object.jmin:object.jmax+1,object.imin:object.imax+1]
-    object.H    = object.H_full[object.jmin:object.jmax+1,object.imin:object.imax+1]
+    object.B   = object.B[object.jmin:object.jmax+1,object.imin:object.imax+1]
+    #object.H    = object.H_full[object.jmin:object.jmax+1,object.imin:object.imax+1]
 
     object.x    = object.x_full[object.imin:object.imax+1]
     object.y    = object.y_full[object.jmin:object.jmax+1]
@@ -195,25 +196,29 @@ def add_border(object):
     #Add north
     object.mask = np.append(object.mask,object.borderN+np.zeros((1,object.nx)),axis=0)
     object.zb   = np.append(object.zb,np.zeros((1,object.nx)),axis=0)
-    object.H    = np.append(object.H,np.zeros((1,object.nx)),axis=0)
+    object.B   = np.append(object.B,np.zeros((1,object.nx)),axis=0)
+    #object.H    = np.append(object.H,np.zeros((1,object.nx)),axis=0)
     object.y    = np.append(object.y,object.y[-1]+object.dy)
 
     #Add south
     object.mask = np.append(object.borderS+np.zeros((1,object.nx)),object.mask,axis=0)
     object.zb   = np.append(np.zeros((1,object.nx)),object.zb,axis=0)
-    object.H   = np.append(np.zeros((1,object.nx)),object.H,axis=0)
+    object.B   = np.append(np.zeros((1,object.nx)),object.B,axis=0)
+    #object.H   = np.append(np.zeros((1,object.nx)),object.H,axis=0)
     object.y    = np.append(object.y[0]-object.dy,object.y)
 
     #Add east
     object.mask = np.append(object.mask,object.borderE+np.zeros((object.ny+2,1)),axis=1)
     object.zb   = np.append(object.zb,np.zeros((object.ny+2,1)),axis=1)
-    object.H   = np.append(object.H,np.zeros((object.ny+2,1)),axis=1)
+    object.B   = np.append(object.B,np.zeros((object.ny+2,1)),axis=1)
+    #object.H   = np.append(object.H,np.zeros((object.ny+2,1)),axis=1)
     object.x    = np.append(object.x,object.x[-1]+object.dx)
 
     #Add west
     object.mask = np.append(object.borderW+np.zeros((object.ny+2,1)),object.mask,axis=1)
     object.zb   = np.append(np.zeros((object.ny+2,1)),object.zb,axis=1)
-    object.H   = np.append(np.zeros((object.ny+2,1)),object.H,axis=1)
+    object.B   = np.append(np.zeros((object.ny+2,1)),object.B,axis=1)
+    #object.H   = np.append(np.zeros((object.ny+2,1)),object.H,axis=1)
     object.x    = np.append(object.x[0]-object.dx,object.x)
 
     return
