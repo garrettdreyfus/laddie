@@ -21,10 +21,11 @@ def prepare_integrate(object):
     """Compute reused fields in integration, after integrating D"""
     object.dDdt = (object.D[2,:,:]-object.D[0,:,:]) / (2*object.dt)
     object.D[1][object.D[1]>object.H]=object.H[object.D[1]>object.H]
-    object.D2[1] = (object.H-object.D[1])*object.tmask
+    object.D2 = (object.H-object.D)*object.tmask
     object.dD2dt = (object.D2[2,:,:]-object.D2[0,:,:]) / (2*object.dt)
     object.Ddrho = object.D[1,:,:]*object.drho
-    object.TWterm = object.g*(object.zb-object.D[1,:,:])*((object.rho0-object.rho02)/object.rho0+object.drho)
+    #object.TWterm = object.g*(object.zb-object.D[1,:,:])*((object.rho0-object.rho02)/object.rho0+object.drho)
+    object.TWterm = object.g*(object.zb-object.D[1,:,:])*(object.drho)
        
     if object.convop == 2:
         object.conv2 = np.where(object.drho<0,1,0)*object.D[1,:,:]/object.convtime# *np.where(object.convop==2,1,0)
@@ -50,7 +51,7 @@ def timefilter(object):
 def updatevars(object):
     """Update temporary variables"""
     object.D = np.roll(object.D,-1,axis=0)
-    object.D2 = (object.H)-object.D
+    object.D2 = (object.zb-object.B)-object.D
     object.U = np.roll(object.U,-1,axis=0)
     object.V = np.roll(object.V,-1,axis=0)
     object.U2 = np.roll(object.U2,-1,axis=0)
@@ -67,10 +68,10 @@ def cutforstability(object):
     object.V[2,:,:] = np.where(object.V[2,:,:]> object.vcut, object.vcut,object.V[2,:,:])
     object.V[2,:,:] = np.where(object.V[2,:,:]<-object.vcut,-object.vcut,object.V[2,:,:])   
 
-    object.U2[2,:,:] = np.where(object.U2[2,:,:]> object.vcut, object.vcut,object.U2[2,:,:])
-    object.U2[2,:,:] = np.where(object.U2[2,:,:]<-object.vcut,-object.vcut,object.U2[2,:,:])
-    object.V2[2,:,:] = np.where(object.V2[2,:,:]> object.vcut, object.vcut,object.V2[2,:,:])
-    object.V2[2,:,:] = np.where(object.V2[2,:,:]<-object.vcut,-object.vcut,object.V2[2,:,:])   
+    object.U2[2,:,:] = np.where(object.U[2,:,:]> object.vcut, object.vcut,object.U[2,:,:])
+    object.U2[2,:,:] = np.where(object.U[2,:,:]<-object.vcut,-object.vcut,object.U[2,:,:])
+    object.V2[2,:,:] = np.where(object.V[2,:,:]> object.vcut, object.vcut,object.V[2,:,:])
+    object.V2[2,:,:] = np.where(object.V[2,:,:]<-object.vcut,-object.vcut,object.V[2,:,:])   
 
 # [X] convD2
 # [X] dD2dt
@@ -89,83 +90,83 @@ def intD(object,delt):
                     +  object.nentr \
                     ) * object.tmask * delt    
 
-def intU(object,delt):
-    """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-    object.U[2,:,:] = object.U[0,:,:] \
-                    + div0((-object.U[1,:,:] * ip_t(object,object.dDdt) \
-                    +  convU(object) \
-                    #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
+# def intU(object,delt):
+#     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
+#     object.U[2,:,:] = object.U[0,:,:] \
+#                     + div0((-object.U[1,:,:] * ip_t(object,object.dDdt) \
+#                     +  convU(object) \
+#                     #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
 
-                    ## PRESSURE TERMS
-                    ### --------------------
-                    -  .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-                    + ip_t(object,object.D[1,:,:])*(np.roll(object.RL,-1,axis=1)-object.RL)/(object.dx*object.rho0) \
-                    ### --------------------
+#                     ## PRESSURE TERMS
+#                     ### --------------------
+#                     -  .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
+#                     + ip_t(object,object.D[1,:,:])*(np.roll(object.RL,-1,axis=1)-object.RL)/(object.dx*object.rho0) \
+#                     ### --------------------
 
-                    +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
-                    +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
-                    +  object.Ah*lapU(object) \
-                    +  -object.detr* object.U[1,:,:] \
-                    ),ip_t(object,object.D[1,:,:])) * object.umask * delt
+#                     +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
+#                     +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
+#                     +  object.Ah*lapU(object) \
+#                     +  -object.detr* object.U[1,:,:] \
+#                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
 
-def intV(object,delt):
-    """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-    object.V[2,:,:] = object.V[0,:,:] \
-                    +div0((-object.V[1,:,:] * jp_t(object,object.dDdt) \
-                    + convV(object) \
-                    #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    #PRESSURE TERMS
-                    #-------------------------
-                    - .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    + jp_t(object,object.D[1,:,:])*(np.roll(object.RL,-1,axis=0)-object.RL)/(object.dy*object.rho0) \
-                    #-------------------------
+# def intV(object,delt):
+#     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
+#     object.V[2,:,:] = object.V[0,:,:] \
+#                     +div0((-object.V[1,:,:] * jp_t(object,object.dDdt) \
+#                     + convV(object) \
+#                     #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+#                     #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+#                     #PRESSURE TERMS
+#                     #-------------------------
+#                     - .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+#                     + jp_t(object,object.D[1,:,:])*(np.roll(object.RL,-1,axis=0)-object.RL)/(object.dy*object.rho0) \
+#                     #-------------------------
 
-                    + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
-                    + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
-                    + object.Ah*lapV(object) \
-                    +  -object.detr* object.V[1,:,:] \
-                    ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
+#                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
+#                     + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
+#                     + object.Ah*lapV(object) \
+#                     +  -object.detr* object.V[1,:,:] \
+#                     ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
 
-def intU2(object,delt):
-    """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-    object.U2[2,:,:] = object.U2[0,:,:] \
-                    + div0((-object.U2[1,:,:] * ip_t(object,object.dD2dt) \
-                    +  convU2(object) \
-                    #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
+# def intU2(object,delt):
+#     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
+#     object.U2[2,:,:] = object.U2[0,:,:] \
+#                     + div0((-object.U2[1,:,:] * ip_t(object,object.dD2dt) \
+#                     +  convU2(object) \
+#                     #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
 
-                    ## PRESSURE TERMS
-                    ### --------------------
-                    #-  .5*object.g*ip_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D2[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-                    + ip_t(object,object.D2[1,:,:])*(np.roll(object.RL,-1,axis=1)-object.RL)/(object.dx*object.rho0) \
-                    - ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.rho0)\
-                    ### --------------------
+#                     ## PRESSURE TERMS
+#                     ### --------------------
+#                     #-  .5*object.g*ip_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D2[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
+#                     + ip_t(object,object.D2[1,:,:])*(np.roll(object.RL,-1,axis=1)-object.RL)/(object.dx*object.rho0) \
+#                     - ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.rho0)\
+#                     ### --------------------
 
-                    +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
-                    +  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
-                    +  object.Ah*lapU2(object) \
-                    +  -object.detr* object.U2[1,:,:] \
-                    ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
+#                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
+#                     +  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
+#                     +  object.Ah*lapU2(object) \
+#                     +  -object.detr* object.U2[1,:,:] \
+#                     ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
 
-def intV2(object,delt):
-    """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-    object.V2[2,:,:] = object.V2[0,:,:] \
-                    +div0((-object.V2[1,:,:] * jp_t(object,object.dD2dt) \
-                    + convV2(object) \
-                    #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    #PRESSURE TERMS
-                    #-------------------------
-                    #- .5*object.g*jp_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    + jp_t(object,object.D2[1,:,:])*(np.roll(object.RL,-1,axis=0)-object.RL)/(object.dy*object.rho0) \
-                    - jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.rho0)\
-                    #-------------------------
+# def intV2(object,delt):
+#     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
+#     object.V2[2,:,:] = object.V2[0,:,:] \
+#                     +div0((-object.V2[1,:,:] * jp_t(object,object.dD2dt) \
+#                     + convV2(object) \
+#                     #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+#                     #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+#                     #PRESSURE TERMS
+#                     #-------------------------
+#                     #- .5*object.g*jp_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+#                     + jp_t(object,object.D2[1,:,:])*(np.roll(object.RL,-1,axis=0)-object.RL)/(object.dy*object.rho0) \
+#                     - jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.rho0)\
+#                     #-------------------------
 
-                    + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
-                    + -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
-                    + object.Ah*lapV2(object) \
-                    +  -object.detr* object.V2[1,:,:] \
-                    ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
+#                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
+#                     + -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
+#                     + object.Ah*lapV2(object) \
+#                     +  -object.detr* object.V2[1,:,:] \
+#                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
 
 def generate_stars(object,delt):
     #hello
@@ -177,7 +178,7 @@ def generate_stars(object,delt):
 
                     ## PRESSURE TERMS
                     ### --------------------
-                    - .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
+                    - .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*aware_diff_t(object,object.drho,1,-1)/object.dx \
                             
                     ### --------------------
 
@@ -197,7 +198,8 @@ def generate_stars(object,delt):
                     #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
                     #PRESSURE TERMS
                     #-------------------------
-                    - .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+                    #- .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
+                    - .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(aware_diff_t(object,object.drho,0,-1))/object.dy \
                     #-------------------------
 
                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
@@ -215,7 +217,7 @@ def generate_stars(object,delt):
                     ## PRESSURE TERMS
                     ### --------------------
                     #-  .5*object.g*ip_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D2[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-                    + object.g*ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx)\
+                    + ip_t(object,object.D2[1,:,:])*aware_diff_t(object,object.TWterm,1,-1)/(object.dx)\
                     ### --------------------
 
                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
@@ -232,7 +234,7 @@ def generate_stars(object,delt):
                     #PRESSURE TERMS
                     #-------------------------
                     #- .5*object.g*jp_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    + object.g*jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy)\
+                    + jp_t(object,object.D2[1,:,:])*(aware_diff_t(object,object.TWterm,0,-1))/(object.dy)\
                     #-------------------------
 
                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
@@ -247,15 +249,13 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
     while True:
         maxdiff =0 
         absdiff=0
-        pi_prev =0 
         for i in range(1,Nx):
             for j in range(1,Ny):
                 pi_prev = pi[i,j]
-                if tmask[i,j]:
-                    pi[i,j] = (1-rp)*pi[i,j] \
-                                + rp * Osum[i,j] \
-                                    *  ( Os[i+1,j]*pi[i+1,j] + Os[i,j]*pi[i-1][j] + Ow[i,j+1]*pi[i,j+1] + Ow[i,j]*pi[i,j-1] - pi_rhs[i,j] );
-                    absdiff = abs(pi_prev-pi[i,j])
+                pi[i,j] = (1-rp)*pi[i,j] \
+                            + rp * Osum[i,j] \
+                                *  ( Os[i+1,j]*pi[i+1,j] + Os[i,j]*pi[i-1][j] + Ow[i,j+1]*pi[i,j+1] + Ow[i,j]*pi[i,j-1] - pi_rhs[i,j] );
+                absdiff = abs(pi_prev-pi[i,j])
                 if absdiff>maxdiff:
                     maxdiff=absdiff
         if maxdiff<pi_tol:
@@ -279,22 +279,32 @@ def surface_pressure(object,delt):
     hu2 = object.Ustar2*im_t(object,object.D2[1])
     hv2 = object.Vstar2*jm_t(object,object.D2[1])
 
+    # fig, (ax1,ax2) = plt.subplots(1,2)
+    # ax1.imshow(object.Ustar)
+    # ax2.imshow(object.Ustar2)
+    # plt.show()
+
+
 
     pi_rhs = np.zeros(hu1.shape)
 
 
     pi_rhs -= hv1/(object.dy*delt)
     pi_rhs += np.roll(hv1/(object.dy*delt),-1,axis=0)*object.vmask
+    #pi_rhs += aware_diff_v(object,hv1,0,-1)/(object.dy*delt)
     #pi_rhs += aware_diff_v(object,hv1,0,-1)
 
     pi_rhs -= hv2/(object.dy*delt)
     pi_rhs += np.roll(hv2/(object.dy*delt),-1,axis=0)*object.vmask
+    #pi_rhs += aware_diff_v(object,hv2,0,-1)/(object.dy*delt)
 
     pi_rhs -= hu1/(object.dx*delt)
     pi_rhs += np.roll(hu1/(object.dx*delt),-1,axis=1)*object.vmask
+    #pi_rhs += aware_diff_u(object,hu1,1,-1)/(object.dx*delt)
 
     pi_rhs -= hu2/(object.dx*delt)
     pi_rhs += np.roll(hu2/(object.dx*delt),-1,axis=1)*object.vmask
+    #pi_rhs += aware_diff_u(object,hu2,1,-1)/(object.dx*delt)
 
     #pi_rhs = create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
     #pi_rhs[object.tmask==0]=np.nan
@@ -333,8 +343,8 @@ def surface_pressure(object,delt):
         object.Os = Os
         object.Ow = Ow
 
-    rp=0.66
-    pi_tol = 10**-11
+    rp=0.8
+    pi_tol = 10**-8
     pi = object.RL[1]
     iters = 0
     pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
@@ -353,36 +363,38 @@ def surface_pressure(object,delt):
 
     object.RL[1] = pi
 
-    object.U[2,:,:] = object.Ustar + delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)*object.umask
-    object.U2[2,:,:] = object.Ustar2 + delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)*object.umask
-    object.V[2,:,:] = object.Vstar + delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)*object.vmask
-    object.V2[2,:,:] = object.Vstar2 + delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)*object.vmask
+    object.U[2,:,:] = object.Ustar + delt*aware_diff_t(object,pi,1,1)/(object.dx)*object.umask
+    object.U2[2,:,:] = object.Ustar2 + delt*aware_diff_t(object,pi,1,1)/(object.dx)*object.umask
+    object.V[2,:,:] = object.Vstar + delt*aware_diff_t(object,pi,0,1)/(object.dy)*object.vmask
+    object.V2[2,:,:] = object.Vstar2 + delt*aware_diff_t(object,pi,0,1)/(object.dy)*object.vmask
     object.pressure_solves+=1
-    if (object.pressure_solves)%10 ==0:
+    if (object.pressure_solves)%1000 ==0:
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
-        im = ax1.imshow(object.D[2])
+        X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
+        im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
+        #ax1.quiver(object.U[2],object.V[2])
         plt.colorbar(im,ax=ax1)
-        im = ax2.imshow(object.U[2])
+        im = ax2.pcolormesh(X,Y,object.U[2]*object.umask,vmin=-0.01,vmax=0.01)
         plt.colorbar(im,ax=ax2)
-        im = ax3.imshow(object.V[2])
+        im = ax3.pcolormesh(X,Y,object.V[2]*object.vmask,vmin=-0.01,vmax=0.01)
         plt.colorbar(im,ax=ax3)
 
-        im = ax4.imshow(object.D2[2])
+        im = ax4.pcolormesh(X,Y,object.D2[2]*object.tmask)
+        #ax4.quiver(object.U2[2],object.V2[2])
         plt.colorbar(im,ax=ax4)
-        im = ax5.imshow(object.U2[2])
+        im = ax5.pcolormesh(X,Y,object.U2[2]*object.umask,vmin=-0.01,vmax=0.01)
         plt.colorbar(im,ax=ax5)
-        im = ax6.imshow(object.V2[2])
+        im = ax6.pcolormesh(X,Y,object.V2[2]*object.vmask,vmin=-0.01,vmax=0.01)
         plt.colorbar(im,ax=ax6)
 
-        im = ax7.imshow(object.RL[1])
+        im = ax7.pcolormesh(X,Y,object.RL[1]*object.tmask)
         plt.colorbar(im,ax=ax7)
-        im = ax8.imshow(object.melt)
+        im = ax8.pcolormesh(X,Y,object.melt*object.tmask*365*60*64*24)
         plt.colorbar(im,ax=ax8)
-        im = ax9.imshow(object.H)
+        im = ax9.pcolormesh(X,Y,object.drho)
         plt.colorbar(im,ax=ax9)
-        #ax4.quiver(object.U2[2],object.V2[2])
         plt.show()
-        #breakpoint()
+        breakpoint()
 
     hu1 = object.Ustar*im_t(object,object.D[1])
     hv1 = object.Vstar*jm_t(object,object.D[1])
@@ -392,7 +404,7 @@ def surface_pressure(object,delt):
     hu = hu1+hu2
     hv = hv1+hv2
     print("-------")
-    print(np.nanmean(delt*(object.tmask*np.abs((-hu+np.roll(hu,-1,axis=1)*object.umask)*object.dy+(-hv+np.roll(hv,-1,axis=0)*object.vmask)*object.dx)/(object.dx*object.dy))))
+    print(np.nanmean(delt*np.abs(aware_diff_u(object,hu,1,-1)*object.dy+aware_diff_v(object,hv,0,-1)*object.dx)/(object.dx*object.dy)))
     #ax1.imshow(object.tmask*(hu-np.roll(hu,-1,axis=1)+hv-np.roll(hv,-1,axis=0)))
 
     hu1 = object.U[2]*im_t(object,object.D[1])*object.umask
@@ -401,7 +413,7 @@ def surface_pressure(object,delt):
     hv2 = object.V2[2]*jm_t(object,object.D2[1])*object.vmask
     hu = hu1+hu2
     hv = hv1+hv2
-    print(np.nanmean(delt*(object.tmask*np.abs((-hu+np.roll(hu,-1,axis=1)*object.umask)*object.dy+(-hv+np.roll(hv,-1,axis=0)*object.vmask)*object.dx)/(object.dx*object.dy))))
+    print(np.nanmean(delt*np.abs(aware_diff_u(object,hu,1,-1)*object.dy+aware_diff_v(object,hv,0,-1)*object.dx)/(object.dx*object.dy)))
     #ax2.imshow(object.tmask*((hu-np.roll(hu,-1,axis=1))/object.dx+(hv-np.roll(hv,-1,axis=0))/object.dy))
     print("KE: ",np.sqrt(np.sum((object.umask*object.U[2])**2 + (object.vmask*object.V[2])**2)))
     print("D1: ",np.sum(object.D[1])/np.sum(object.tmask))

@@ -1,5 +1,6 @@
 import os, sys
 import numpy as np
+import matplotlib.pyplot as plt
 
 def div0(a,b):
     """Divide to variables allowing for divide by zero"""
@@ -27,22 +28,23 @@ def jp(var):
     return .5*(var+np.roll(var,-1,axis=0))
 
 def aware_diff_t(object,var,ax,roll):
-    mask = np.logical_and(object.tmask,~np.roll(object.tmask,roll,axis=ax))
+    mask = np.logical_and(object.tmask,np.roll(object.tmask,roll,axis=ax))
     result = np.roll(var,roll,axis=ax)-var
-    result[mask] = result[np.roll(mask,-roll,axis=ax)]
+    result[~mask]=0
     return result
 
 def aware_diff_u(object,var,ax,roll):
-    mask = np.logical_and(object.umask,~np.roll(object.umask,roll,axis=ax))
+    mask = np.logical_and(object.umask,np.roll(object.umask,roll,axis=ax))
     result = np.roll(var,roll,axis=ax)-var
-    result[mask] = result[np.roll(mask,-roll,axis=ax)]
+    result[~mask]=0
     return result
 
 def aware_diff_v(object,var,ax,roll):
-    mask = np.logical_and(object.vmask,~np.roll(object.vmask,roll,axis=ax))
+    mask = np.logical_and(object.vmask,np.roll(object.vmask,roll,axis=ax))
     result = np.roll(var,roll,axis=ax)-var
-    result[mask] = result[np.roll(mask,-roll,axis=ax)]
+    result[~mask]=0
     return result
+
 
 def im_t(object,var):
     """Value at i-1/2 on tmask, no gradient across boundary"""

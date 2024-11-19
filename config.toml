@@ -3,7 +3,7 @@ name = "test"   # Run name
 days = 2        # [days] run duration
 
 [Time]
-dt = 40        # [s] timestep
+dt = 20        # [s] timestep
 restday = 1    # [days] interval to save restartfile
 saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
@@ -19,7 +19,7 @@ calvthresh = 0            # [m] Thickness threshold for calving
 removebergs = true        # Remove icebergs
 
 [Forcing]
-option = "tanh" # Available options: 'file', 'tanh', 'linear', 'isomip', and 'linear2'
+option = "linear" # Available options: 'file', 'tanh', 'linear', 'isomip', and 'linear2'
 #filename = "./input/forc_test.nc" #File containing T and S profiles, called if option = 'file
 z0    = -720    # [m] Reference depth used in 'tanh' and 'linear', 'isomip', and 'linear2'
 S0    = 34.0    # [psu] Surface salinity used in 'tanh'
@@ -54,8 +54,8 @@ Ti        = -25       # [degC]      Ice shelf temperature
 #Physical parameters
 f         = -1.37e-4  # [1/s]       Coriolis parameter
 rhofw     = 1000.0     # [kg/m^3]    Density of freshwater
-rho0      = 1028.0     # [kg/m^3]    Reference density of seawater 
-rho02      = 1029.0     # [kg/m^3]    Reference density of seawater 
+rho0      = 1027.0     # [kg/m^3]    Reference density of seawater 
+rho02      = 1032.0     # [kg/m^3]    Reference density of seawater 
 rhoi      = 918.0      # [kg/m^3]    Density of ice
 gamTfix   = 0.00018    # []          Turbulent exchange coefficient. If False: computed online
 #Tuning
