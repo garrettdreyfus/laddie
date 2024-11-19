@@ -4,6 +4,7 @@ from tools import *
 import pyamg
 import pdb
 import matplotlib.pyplot as plt
+from numba import njit
 
 def integrate(object,nsteps=2):
     """Integration of N time steps. During normal integration, nsteps = 2 (now-centered Leapfrog scheme)"""
@@ -19,8 +20,8 @@ def integrate(object,nsteps=2):
 def prepare_integrate(object):
     """Compute reused fields in integration, after integrating D"""
     object.dDdt = (object.D[2,:,:]-object.D[0,:,:]) / (2*object.dt)
-    object.D2 = ((object.zb-object.B)-object.D)*object.tmask
-    object.D2[object.D2<0]=0
+    object.D[1][object.D[1]>object.H]=object.H[object.D[1]>object.H]
+    object.D2[1] = (object.H-object.D[1])*object.tmask
     object.dD2dt = (object.D2[2,:,:]-object.D2[0,:,:]) / (2*object.dt)
     object.Ddrho = object.D[1,:,:]*object.drho
     object.TWterm = object.g*(object.zb-object.D[1,:,:])*((object.rho0-object.rho02)/object.rho0+object.drho)
@@ -49,7 +50,7 @@ def timefilter(object):
 def updatevars(object):
     """Update temporary variables"""
     object.D = np.roll(object.D,-1,axis=0)
-    object.D2 = (object.zb-object.B)-object.D
+    object.D2 = (object.H)-object.D
     object.U = np.roll(object.U,-1,axis=0)
     object.V = np.roll(object.V,-1,axis=0)
     object.U2 = np.roll(object.U2,-1,axis=0)
@@ -66,10 +67,10 @@ def cutforstability(object):
     object.V[2,:,:] = np.where(object.V[2,:,:]> object.vcut, object.vcut,object.V[2,:,:])
     object.V[2,:,:] = np.where(object.V[2,:,:]<-object.vcut,-object.vcut,object.V[2,:,:])   
 
-    object.U2[2,:,:] = np.where(object.U[2,:,:]> object.vcut, object.vcut,object.U[2,:,:])
-    object.U2[2,:,:] = np.where(object.U[2,:,:]<-object.vcut,-object.vcut,object.U[2,:,:])
-    object.V2[2,:,:] = np.where(object.V[2,:,:]> object.vcut, object.vcut,object.V[2,:,:])
-    object.V2[2,:,:] = np.where(object.V[2,:,:]<-object.vcut,-object.vcut,object.V[2,:,:])   
+    object.U2[2,:,:] = np.where(object.U2[2,:,:]> object.vcut, object.vcut,object.U2[2,:,:])
+    object.U2[2,:,:] = np.where(object.U2[2,:,:]<-object.vcut,-object.vcut,object.U2[2,:,:])
+    object.V2[2,:,:] = np.where(object.V2[2,:,:]> object.vcut, object.vcut,object.V2[2,:,:])
+    object.V2[2,:,:] = np.where(object.V2[2,:,:]<-object.vcut,-object.vcut,object.V2[2,:,:])   
 
 # [X] convD2
 # [X] dD2dt
@@ -176,7 +177,7 @@ def generate_stars(object,delt):
 
                     ## PRESSURE TERMS
                     ### --------------------
-                    -  .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*aware_diff_t(object,object.drho,1,-1)/object.dx \
+                    - .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
                             
                     ### --------------------
 
@@ -240,129 +241,174 @@ def generate_stars(object,delt):
                     +  -object.detr* object.V2[1,:,:] \
                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
 
+@njit
+def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
+    iters =0 
+    while True:
+        maxdiff =0 
+        absdiff=0
+        pi_prev =0 
+        for i in range(1,Nx):
+            for j in range(1,Ny):
+                pi_prev = pi[i,j]
+                if tmask[i,j]:
+                    pi[i,j] = (1-rp)*pi[i,j] \
+                                + rp * Osum[i,j] \
+                                    *  ( Os[i+1,j]*pi[i+1,j] + Os[i,j]*pi[i-1][j] + Ow[i,j+1]*pi[i,j+1] + Ow[i,j]*pi[i,j-1] - pi_rhs[i,j] );
+                    absdiff = abs(pi_prev-pi[i,j])
+                if absdiff>maxdiff:
+                    maxdiff=absdiff
+        if maxdiff<pi_tol:
+            print("SOR: ",iters)
+            return pi
+        iters+=1
+
+#SOR_jit = jit(SOR)
+
+#def create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
+    #for i in range:
+
+
 def surface_pressure(object,delt):
-    hu1 = object.Ustar*im_u(object,object.D[1])*object.umask
-    hv1 = object.Vstar*jm_v(object,object.D[1])*object.vmask
-    hu2 = object.Ustar2*im_u(object,object.D2[1])*object.umask
-    hv2 = object.Vstar2*jm_v(object,object.D2[1])*object.vmask
+    #object.Ustar[:] = 1
+    #object.Vstar[:] = 1
+    #object.Ustar2[:] = 1
+    #object.Vstar2[:] = 1
+    hu1 = object.Ustar*im_t(object,object.D[1])
+    hv1 = object.Vstar*jm_t(object,object.D[1])
+    hu2 = object.Ustar2*im_t(object,object.D2[1])
+    hv2 = object.Vstar2*jm_t(object,object.D2[1])
+
 
     pi_rhs = np.zeros(hu1.shape)
 
 
     pi_rhs -= hv1/(object.dy*delt)
     pi_rhs += np.roll(hv1/(object.dy*delt),-1,axis=0)*object.vmask
+    #pi_rhs += aware_diff_v(object,hv1,0,-1)
 
     pi_rhs -= hv2/(object.dy*delt)
     pi_rhs += np.roll(hv2/(object.dy*delt),-1,axis=0)*object.vmask
 
     pi_rhs -= hu1/(object.dx*delt)
-    pi_rhs += np.roll(hu1/(object.dx*delt),-1,axis=1)*object.umask
+    pi_rhs += np.roll(hu1/(object.dx*delt),-1,axis=1)*object.vmask
 
     pi_rhs -= hu2/(object.dx*delt)
-    pi_rhs += np.roll(hu2/(object.dx*delt),-1,axis=1)*object.umask
-    pi_rhs = pi_rhs*object.tmask
+    pi_rhs += np.roll(hu2/(object.dx*delt),-1,axis=1)*object.vmask
+
+    #pi_rhs = create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
     #pi_rhs[object.tmask==0]=np.nan
 
     ## think thats good
-    H = object.D[1]+object.D2[1]
+    if object.pressure_solves==0:
+        H = object.H
+        #plt.imshow((object.D2[1]<0))
+        #plt.show()
 
-    #plt.imshow((object.D2[1]<0))
-    #plt.show()
+        preHs = np.roll(H,1,axis=0)
+        #preHs[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]=H[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]
+        #Hs = (H + preHs)/2
+        #Hs = im_t(object,H)
+        Hs = (1/3) *  (H+np.roll(H,1,axis=0)+0.25*(np.roll(H,-1,axis=1)+np.roll(H,1,axis=1)+np.roll(np.roll(H,-1,axis=1),1,axis=0)+np.roll(np.roll(H,1,axis=1),1,axis=0)))
 
-    #Hs = (1/3) *  (H+np.roll(H,1,axis=0)+0.25*(np.roll(H,-1,axis=1)+np.roll(H,1,axis=1)+np.roll(np.roll(H,-1,axis=1),1,axis=0)+np.roll(np.roll(H,1,axis=1),1,axis=0)))
-    preHs = np.roll(H,1,axis=0)
-    preHs[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]=H[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]
-    Hs = (H + preHs)/2
+        preHw = np.roll(H,1,axis=1)
+        #preHw[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]=H[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]
+        #Hw = (H + preHw)/2
+        #Hw = jm_t(object,H)
+        Hw = (1/3) *  (H+np.roll(H,1,axis=1)+0.25*(np.roll(H,-1,axis=0)+np.roll(H,1,axis=0)+np.roll(np.roll(H,-1,axis=0),1,axis=1)+np.roll(np.roll(H,1,axis=1),1,axis=0)))
 
-    preHw = np.roll(H,1,axis=1)
-    preHw[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]=H[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]
-    Hw = (H + preHw)/2
-    #Hw = (1/3) *  (H+np.roll(H,1,axis=1)+0.25*(np.roll(H,-1,axis=0)+np.roll(H,1,axis=0)+np.roll(np.roll(H,-1,axis=0),1,axis=1)+np.roll(np.roll(H,1,axis=1),1,axis=0)))
+        Os = Hs/(object.dy**2)*object.tmask
+        Ow = Hw/(object.dx**2)*object.tmask
 
-    Os = Hs/(object.dy**2)*object.tmask
-    Ow = Hw/(object.dx**2)*object.tmask
+        rolledOw = np.roll(Ow,-1,axis=1)
+        #rolledOw[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]=Ow[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]
 
-    rolledOw = np.roll(Ow,1,axis=1)
-    rolledOw[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]=Ow[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]
+        rolledOs = np.roll(Os,-1,axis=0)
+        #rolledOs[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]=Os[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]
 
-    rolledOs = np.roll(Os,1,axis=0)
-    rolledOs[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]=Os[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]
+        Osum = (Ow + rolledOw + Os + rolledOs) *object.tmask
+        Osum=Osum
+        Osum[Osum!=0] = 1/Osum[Osum!=0]
+        object.Osum = Osum
+        object.Os = Os
+        object.Ow = Ow
 
-    Osum = Ow + rolledOw + Os + rolledOs 
-    Osum=Osum*object.tmask
-    #fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
-    #ax1.imshow(object.umask*-.5*object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx)
-    #ax1.imshow(object.vmask*aware_diff_u(object,object.drho,1,-1)/object.dx)
-    #ax2.imshow(object.Ustar)
-    tw = object.TWterm
-    #ax3.imshow(H)
-    #ax2.imshow(hu1+hu2)
-    #ax3.imshow(hv1+hv2)
-    Osum[Osum!=0] = 1/Osum[Osum!=0]
-    zb = object.zb
-    #ax4.imshow(object.vmask*.5*object.g*jp_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy)
-    drho = object.drho
-    #drho[object.tmask==0]=np.nan
-    #ax4.imshow(object.drho)
-    #plt.show()
-
-    rp=0.75
-    pi_tol = 10**-5
-    pi_prev = object.RL[1]
+    rp=0.66
+    pi_tol = 10**-11
     pi = object.RL[1]
     iters = 0
-    plt.imshow(pi_rhs)
-    plt.show()
-    plt.imshow(pi)
-    plt.show()
-    while True:
-        pi_prev[:] = pi
-        pi = (1-rp)*pi \
-                    + rp * Osum \
-                        *  ( np.roll(Os*pi,-1,axis=0) + Os*np.roll(pi,1,axis=0) + np.roll(Ow*pi,-1,axis=1) + Ow*np.roll(pi,1,axis=1) - pi_rhs );
-        pi = pi*object.tmask
-        pi_prev = pi_prev*object.tmask
+    pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
+    #fig,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
+    #ax1.imshow(hu1)
+    #ax2.imshow(hu2)
+    #ax3.imshow(hv1)
+    #ax4.imshow(pi_rhs)
+    #plt.show()
+#
+    #fig,(ax1,ax2) = plt.subplots(1,2)
+    #pi_rhs[H==0] = np.nan
+    #ax1.imshow(Osum)
+    #ax2.imshow(H)
+    #plt.show()
 
-        maxdiff = np.nanmax(np.abs(pi-pi_prev))
-        iters+=1
-        if maxdiff<pi_tol:
-            break
-    print("SOR iters: ", iters)   
-    object.RL[1][:] = pi
+    object.RL[1] = pi
 
-    object.U[2,:,:] = object.Ustar + delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)*object.tmask
-    object.U2[2,:,:] = object.Ustar2 + delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)*object.tmask
-    object.V[2,:,:] = object.Vstar + delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)*object.tmask
-    object.V2[2,:,:] = object.Vstar2 + delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)*object.tmask
+    object.U[2,:,:] = object.Ustar + delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)*object.umask
+    object.U2[2,:,:] = object.Ustar2 + delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)*object.umask
+    object.V[2,:,:] = object.Vstar + delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)*object.vmask
+    object.V2[2,:,:] = object.Vstar2 + delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)*object.vmask
     object.pressure_solves+=1
-    if (object.pressure_solves)%1000 ==0:
-        fig,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
-        ax1.imshow(object.D[2])
-        ax2.imshow(object.V[2])
-        ax3.imshow(object.U[2])
-        ax4.imshow(object.drho)
+    if (object.pressure_solves)%10 ==0:
+        fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
+        im = ax1.imshow(object.D[2])
+        plt.colorbar(im,ax=ax1)
+        im = ax2.imshow(object.U[2])
+        plt.colorbar(im,ax=ax2)
+        im = ax3.imshow(object.V[2])
+        plt.colorbar(im,ax=ax3)
+
+        im = ax4.imshow(object.D2[2])
+        plt.colorbar(im,ax=ax4)
+        im = ax5.imshow(object.U2[2])
+        plt.colorbar(im,ax=ax5)
+        im = ax6.imshow(object.V2[2])
+        plt.colorbar(im,ax=ax6)
+
+        im = ax7.imshow(object.RL[1])
+        plt.colorbar(im,ax=ax7)
+        im = ax8.imshow(object.melt)
+        plt.colorbar(im,ax=ax8)
+        im = ax9.imshow(object.H)
+        plt.colorbar(im,ax=ax9)
         #ax4.quiver(object.U2[2],object.V2[2])
         plt.show()
-    fig,(ax1,ax2) = plt.subplots(1,2)
-    hu1 = object.Ustar*im_u(object,object.D[1])*object.umask
-    hv1 = object.Vstar*jm_v(object,object.D[1])*object.vmask
-    hu2 = object.Ustar2*im_u(object,object.D2[1])*object.umask
-    hv2 = object.Vstar2*jm_v(object,object.D2[1])*object.vmask
-    hu = hu1+hu2
-    hv = hv1+hv2
-    print(np.nansum(object.umask*object.vmask*np.abs(hu-np.roll(hu,1,axis=1)+hv-np.roll(hv,1,axis=0))))
-    ax1.imshow(object.umask*object.vmask*hu-np.roll(hu,1,axis=1)+hv-np.roll(hv,1,axis=0))
+        #breakpoint()
 
-    hu1 = object.U[2]*im_u(object,object.D[1])*object.umask
-    hv1 = object.V[2]*jm_v(object,object.D[1])*object.vmask
-    hu2 = object.U2[2]*im_u(object,object.D2[1])*object.umask
-    hv2 = object.V2[2]*jm_v(object,object.D2[1])*object.vmask
+    hu1 = object.Ustar*im_t(object,object.D[1])
+    hv1 = object.Vstar*jm_t(object,object.D[1])
+    hu2 = object.Ustar2*im_t(object,object.D2[1])
+    hv2 = object.Vstar2*jm_t(object,object.D2[1])
+
     hu = hu1+hu2
     hv = hv1+hv2
-    print(np.nansum(object.umask*object.vmask*object.tmask*np.abs(hu-np.roll(hu,1,axis=1)+hv-np.roll(hv,1,axis=0))))
-    print("-----")
-    ax2.imshow(hu-np.roll(hu,1,axis=1)+hv-np.roll(hv,1,axis=0))
-  
+    print("-------")
+    print(np.nanmean(delt*(object.tmask*np.abs((-hu+np.roll(hu,-1,axis=1)*object.umask)*object.dy+(-hv+np.roll(hv,-1,axis=0)*object.vmask)*object.dx)/(object.dx*object.dy))))
+    #ax1.imshow(object.tmask*(hu-np.roll(hu,-1,axis=1)+hv-np.roll(hv,-1,axis=0)))
+
+    hu1 = object.U[2]*im_t(object,object.D[1])*object.umask
+    hv1 = object.V[2]*jm_t(object,object.D[1])*object.vmask
+    hu2 = object.U2[2]*im_t(object,object.D2[1])*object.umask
+    hv2 = object.V2[2]*jm_t(object,object.D2[1])*object.vmask
+    hu = hu1+hu2
+    hv = hv1+hv2
+    print(np.nanmean(delt*(object.tmask*np.abs((-hu+np.roll(hu,-1,axis=1)*object.umask)*object.dy+(-hv+np.roll(hv,-1,axis=0)*object.vmask)*object.dx)/(object.dx*object.dy))))
+    #ax2.imshow(object.tmask*((hu-np.roll(hu,-1,axis=1))/object.dx+(hv-np.roll(hv,-1,axis=0))/object.dy))
+    print("KE: ",np.sqrt(np.sum((object.umask*object.U[2])**2 + (object.vmask*object.V[2])**2)))
+    print("D1: ",np.sum(object.D[1])/np.sum(object.tmask))
+    print("D2: ",np.sum(object.D2[1])/np.sum(object.tmask))
+    print("totalvolume: ",np.sum(object.tmask*(object.D2[1]+object.D[1])))
+    print("pressure sulves: ", object.pressure_solves)
+
     plt.show()
     
     

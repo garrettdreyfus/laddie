@@ -3,7 +3,7 @@ name = "test"   # Run name
 days = 2        # [days] run duration
 
 [Time]
-dt = 20        # [s] timestep
+dt = 40        # [s] timestep
 restday = 1    # [days] interval to save restartfile
 saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
