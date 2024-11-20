@@ -25,7 +25,7 @@ def prepare_integrate(object):
     object.dDdt = (object.D[2,:,:]-object.D[0,:,:]) / (2*object.dt)
     object.dD2dt = (object.D2[2,:,:]-object.D2[0,:,:]) / (2*object.dt)
     object.Ddrho = object.D[1,:,:]*object.drho
-    object.TWterm = object.g*(object.zb-object.D[1,:,:])*((object.rho0-object.rho02+object.drho)/object.rho0)
+    object.TWterm = object.g*(object.zb-object.D[1,:,:])*((object.drho))
     #object.TWterm = object.g*(object.zb-object.D[1,:,:])*(object.drho)
        
     if object.convop == 2:
@@ -179,7 +179,7 @@ def generate_stars(object,delt):
 
                     ## PRESSURE TERMS
                     ### --------------------
-                    + object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*aware_diff_t(object,object.drho,1,-1)/(object.dx*object.rho0) \
+                    + object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*aware_diff_t(object,object.drho,1,-1)/(object.dx) \
                             
                     ### --------------------
 
@@ -200,7 +200,7 @@ def generate_stars(object,delt):
                     #PRESSURE TERMS
                     #-------------------------
                     #- .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    + object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(aware_diff_t(object,object.drho,0,-1))/(object.dy*object.rho0) \
+                    + object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(aware_diff_t(object,object.drho,0,-1))/(object.dy) \
                     #-------------------------
 
                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \

@@ -34,14 +34,14 @@ def create_rundir(object,configfile):
                 object.rundir = os.path.join(object.resultdir,dt.datetime.today().strftime(f"{object.name}_%Y-%m-%d"))
                 os.mkdir(object.rundir)
             except:
-                for n in range(100):
-                    try:
-                        #Create rundirectory with current date and incremental number. Give up after 100 tries
-                        object.rundir = os.path.join(object.resultdir,dt.datetime.today().strftime(f"{object.name}_%Y-%m-%d_{n}"))
-                        os.mkdir(object.rundir)
-                        break
-                    except:
-                        continue
+                n = input("Unique name: ")
+                try:
+                    #Create rundirectory with current date and incremental number. Give up after 100 tries
+                    object.rundir = os.path.join(object.resultdir,dt.datetime.today().strftime(f"{object.name}_%Y-%m-%d_{n}"))
+                    os.mkdir(object.rundir)
+                    break
+                except:
+                    continue
     else:
         #No new directory is created, but using existing directory to continue run
         object.newdir = False

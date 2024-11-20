@@ -1,6 +1,6 @@
 [Run]
 name = "test"   # Run name
-days = 2        # [days] run duration
+days = 10        # [days] run duration
 
 [Time]
 dt = 20        # [s] timestep
