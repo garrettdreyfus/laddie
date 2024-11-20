@@ -29,7 +29,7 @@ def jp(var):
 
 def aware_diff_t(object,var,ax,roll):
     mask = np.logical_and(object.tmask,np.roll(object.tmask,roll,axis=ax))
-    result = np.roll(var,roll,axis=ax)-var
+    result = (np.roll(var,roll,axis=ax)-var)
     result[~mask]=0
     return result
 
