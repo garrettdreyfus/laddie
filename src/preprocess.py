@@ -39,9 +39,11 @@ def create_rundir(object,configfile):
                     #Create rundirectory with current date and incremental number. Give up after 100 tries
                     object.rundir = os.path.join(object.resultdir,dt.datetime.today().strftime(f"{object.name}_%Y-%m-%d_{n}"))
                     os.mkdir(object.rundir)
-                    break
+                    #break
                 except:
-                    continue
+                    print("something weird with filenaming")
+                    exit()
+                    #continue
     else:
         #No new directory is created, but using existing directory to continue run
         object.newdir = False
@@ -171,6 +173,8 @@ def read_config(object):
     object.Pr       = tryread(object,"Constants","Pr",float,(0,1e20),default=13.8)
     object.Sc       = tryread(object,"Constants","Sc",float,(0,1e20),default=2432.0)
     object.nu0      = tryread(object,"Constants","nu0",float,(0,1e20),default=1.95e-6)
+
+
 
     object.nu       = tryread(object,"Numerics","nu",float,(0,1))
     object.spy      = tryread(object,"Numerics","spy",int,(0,1e20),default=31536000)
@@ -496,7 +500,18 @@ def init_from_scratch(object):
 
     object.H = object.zb-object.B
     object.B[object.H<10]=object.zb[object.H<10]-10
+
     object.H = object.zb-object.B
+
+    object.Hym1    = np.roll(        object.H*object.tmask,-1,axis=0)
+    object.Hyp1    = np.roll(        object.H*object.tmask, 1,axis=0)
+    object.Hxm1    = np.roll(        object.H*object.tmask,-1,axis=1)
+    object.Hxp1    = np.roll(        object.H*object.tmask, 1,axis=1)
+    object.Hxm1ym1 = np.roll(np.roll(object.H*object.tmask,-1,axis=1),-1,axis=0)
+    object.Hxp1ym1 = np.roll(np.roll(object.H*object.tmask, 1,axis=1),-1,axis=0)
+    object.Hxm1yp1 = np.roll(np.roll(object.H*object.tmask,-1,axis=1), 1,axis=0)
+
+
 
     object.D += object.Dinit*object.tmask
     object.D2 += object.H*object.D

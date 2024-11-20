@@ -27,17 +27,26 @@ def jp(var):
     """Value at j+1/2"""
     return .5*(var+np.roll(var,-1,axis=0))
 
-def aware_diff_t(object,var,ax,roll):
-    mask = np.logical_and(object.tmask,np.roll(object.tmask,roll,axis=ax))
+def pressure_diff_v(object,var,ax,roll):
+    mask = (object.vmask != np.roll(object.vmask,roll,axis=ax))
+    mask = np.logical_or(mask,(object.vmask != np.roll(object.vmask,-roll,axis=ax)))
     result = (np.roll(var,roll,axis=ax)-var)
-    result[~mask]=0
+    result[mask]=0
     return result
 
-def aware_diff_u(object,var,ax,roll):
-    mask = np.logical_and(object.umask,np.roll(object.umask,roll,axis=ax))
-    result = np.roll(var,roll,axis=ax)-var
-    result[~mask]=0
+def pressure_diff_u(object,var,ax,roll):
+    mask = (object.umask != np.roll(object.umask,roll,axis=ax))
+    mask = np.logical_or(mask,(object.umask != np.roll(object.umask,-roll,axis=ax)))
+    result = (np.roll(var,roll,axis=ax)-var)
+    result[mask]=0
     return result
+
+
+def aware_diff_u(object,var,ax,roll):
+     mask = np.logical_and(object.umask,np.roll(object.umask,roll,axis=ax))
+     result = np.roll(var,roll,axis=ax)-var
+     result[~mask]=0
+     return result
 
 def aware_diff_v(object,var,ax,roll):
     mask = np.logical_and(object.vmask,np.roll(object.vmask,roll,axis=ax))
