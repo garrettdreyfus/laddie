@@ -605,6 +605,11 @@ def prepare_output(object):
         object.dsav['D'].attrs['name'] = 'Mixed layer thickness'
         object.dsav['D'].attrs['units'] = 'm'
 
+        object.D2av = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['D2'] = (['y','x'], object.D2av.astype('float64'))
+        object.dsav['D2'].attrs['name'] = 'Mixed layer thickness'
+        object.dsav['D2'].attrs['units'] = 'm'
+
     #Temperature T
     if object.save_T:
         object.Tav = np.zeros((object.ny_full,object.nx_full))
@@ -728,6 +733,17 @@ def prepare_output(object):
 
     object.Dre = np.zeros((3,object.ny_full,object.nx_full))
     object.dsre['D']     = (['n','y','x'], object.Dre)
+
+    object.U2re = np.zeros((3,object.ny_full,object.nx_full))
+    object.dsre['U2']     = (['n','y','x'], object.U2re)
+
+    object.V2re = np.zeros((3,object.ny_full,object.nx_full))
+    object.dsre['V2']     = (['n','y','x'], object.V2re)
+
+    object.D2re = np.zeros((3,object.ny_full,object.nx_full))
+    object.dsre['D2']     = (['n','y','x'], object.D2re)
+
+
 
     object.Tre = np.zeros((3,object.ny_full,object.nx_full))
     object.dsre['T']     = (['n','y','x'], object.Tre)
