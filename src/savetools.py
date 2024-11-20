@@ -17,6 +17,18 @@ def savefields(object):
         object.Vvav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.V[1,1:-1,1:-1]    #V on vgrid
     if object.save_D:
         object.Dav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.D[1,1:-1,1:-1]
+
+    if object.save_Ut:
+        object.U2av[object.jmin:object.jmax+1,object.imin:object.imax+1] += im(object.U2[1,1:-1,1:-1]) #U on tgrid
+    if object.save_Uu:
+        object.U2uav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.U2[1,1:-1,1:-1]    #U on ugrid
+    if object.save_Vt:
+        object.V2av[object.jmin:object.jmax+1,object.imin:object.imax+1] += jm(object.V2[1,1:-1,1:-1]) #V on tgrid
+    if object.save_Vv:
+        object.V2vav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.V2[1,1:-1,1:-1]    #V on vgrid
+    if object.save_D:
+        object.D2av[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.D2[1,1:-1,1:-1]
+ 
     if object.save_T:
         object.Tav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.T[1,1:-1,1:-1]
     if object.save_S:
@@ -48,6 +60,18 @@ def savefields(object):
             object.dsav['Vv'][:] = object.Vvav/object.count * np.where(object.vmask_full,1,np.nan)
         if object.save_D:
             object.dsav['D'][:] = object.Dav/object.count * np.where(object.tmask_full,1,np.nan)
+
+        if object.save_Ut:
+            object.dsav['U2t'][:] = object.U2av/object.count * np.where(object.tmask_full,1,np.nan)
+        if object.save_Uu:
+            object.dsav['U2u'][:] = object.U2uav/object.count * np.where(object.umask_full,1,np.nan)
+        if object.save_Vt:
+            object.dsav['V2t'][:] = object.V2av/object.count * np.where(object.tmask_full,1,np.nan)
+        if object.save_Vv:
+            object.dsav['V2v'][:] = object.V2vav/object.count * np.where(object.vmask_full,1,np.nan)
+        if object.save_D:
+            object.dsav['D2'][:] = object.D2av/object.count * np.where(object.tmask_full,1,np.nan)
+ 
         if object.save_T:
             object.dsav['T'][:] = object.Tav/object.count * np.where(object.tmask_full,1,np.nan)
         if object.save_S:
@@ -111,6 +135,16 @@ def savefields(object):
             object.Vvav *= 0
         if object.save_D:
             object.Dav *= 0
+        if object.save_Ut:
+            object.U2av *= 0
+        if object.save_Uu:
+            object.U2uav *= 0
+        if object.save_Vt:
+            object.V2av *= 0
+        if object.save_Vv:
+            object.V2vav *= 0
+        if object.save_D:
+            object.D2av *= 0
         if object.save_T:
             object.Tav *= 0
         if object.save_S:
@@ -138,6 +172,11 @@ def saverestart(object):
         object.dsre['U'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.U[:,1:-1,1:-1]
         object.dsre['V'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.V[:,1:-1,1:-1]
         object.dsre['D'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.D[:,1:-1,1:-1]
+
+        object.dsre['U2'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.U2[:,1:-1,1:-1]
+        object.dsre['V2'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.V2[:,1:-1,1:-1]
+        object.dsre['D2'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.D2[:,1:-1,1:-1]
+
         object.dsre['T'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.T[:,1:-1,1:-1]
         object.dsre['S'][:,object.jmin:object.jmax+1,object.imin:object.imax+1] = object.S[:,1:-1,1:-1]
         object.dsre.attrs['time'] = object.time[object.t]

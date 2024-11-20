@@ -373,36 +373,31 @@ def surface_pressure(object,delt):
     object.V2[2,:,:] = object.Vstar2 + delt*aware_diff_t(object,pi,0,1)/(object.dy)*object.vmask
     object.pressure_solves+=1
     if (object.pressure_solves)%1000 ==0:
-        fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
-        X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
-        im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
-        #ax1.quiver(object.U[2],object.V[2])
-        plt.colorbar(im,ax=ax1)
-        im = ax2.pcolormesh(X,Y,object.U[2]*object.umask,vmin=-0.1,vmax=0.1,cmap="RdBu_r")
-        plt.colorbar(im,ax=ax2)
-        im = ax3.pcolormesh(X,Y,object.V[2]*object.vmask,vmin=-0.1,vmax=0.1,cmap="RdBu_r")
-        plt.colorbar(im,ax=ax3)
-
-        im = ax4.pcolormesh(X,Y,object.D2[2]*object.tmask)
-        #ax4.quiver(object.U2[2],object.V2[2])
-        plt.colorbar(im,ax=ax4)
-        im = ax5.pcolormesh(X,Y,object.U2[2]*object.umask,vmin=-0.1,vmax=0.1,cmap="RdBu_r")
-        plt.colorbar(im,ax=ax5)
-        im = ax6.pcolormesh(X,Y,object.V2[2]*object.vmask,vmin=-0.1,vmax=0.1,cmap="RdBu_r")
-        plt.colorbar(im,ax=ax6)
-
-        tw = object.TWterm
-        tw[object.tmask==0]=np.nan
-
-        im = ax7.pcolormesh(X,Y,aware_diff_t(object,tw,1,-1))
-        plt.colorbar(im,ax=ax7)
-        dr = object.drho
-        dr[object.tmask==0]=np.nan
-        im = ax8.pcolormesh(X,Y,aware_diff_t(object,object.drho,1,-1))
-        plt.colorbar(im,ax=ax8)
-        im = ax9.pcolormesh(X,Y,object.drho)
-        plt.colorbar(im,ax=ax9)
-        plt.show()
+        #fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
+        #X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
+        #im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
+        ##ax1.quiver(object.U[2],object.V[2])
+        ##plt.colorbar(im,ax=ax1)
+        #im = ax2.pcolormesh(X,Y,object.U[2]*object.umask,vmin=-0.01,vmax=0.01)
+        #plt.colorbar(im,ax=ax2)
+        #im = ax3.pcolormesh(X,Y,object.V[2]*object.vmask,vmin=-0.01,vmax=0.01)
+        #plt.colorbar(im,ax=ax3)
+##
+        #im = ax4.pcolormesh(X,Y,object.D2[2]*object.tmask)
+        ###ax4.quiver(object.U2[2],object.V2[2])
+        #plt.colorbar(im,ax=ax4)
+        #im = ax5.pcolormesh(X,Y,object.U2[2]*object.umask,vmin=-0.01,vmax=0.01)
+        #plt.colorbar(im,ax=ax5)
+        #im = ax6.pcolormesh(X,Y,object.V2[2]*object.vmask,vmin=-0.01,vmax=0.01)
+        #plt.colorbar(im,ax=ax6)
+#
+        #im = ax7.pcolormesh(X,Y,object.RL[1]*object.tmask)
+        #plt.colorbar(im,ax=ax7)
+        #im = ax8.pcolormesh(X,Y,object.melt*object.tmask*365*60*64*24)
+        #plt.colorbar(im,ax=ax8)
+        #im = ax9.pcolormesh(X,Y,object.drho)
+        ###plt.colorbar(im,ax=ax9)
+        #plt.show()
         breakpoint()
 
     hu1 = object.Ustar*im_t(object,object.D[1])

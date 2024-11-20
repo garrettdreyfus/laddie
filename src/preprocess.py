@@ -553,9 +553,14 @@ def prepare_output(object):
     #U velocity on tgrid
     if object.save_Ut:
         object.Uav = np.zeros((object.ny_full,object.nx_full))
+        object.U2av = np.zeros((object.ny_full,object.nx_full))
         object.dsav['Ut'] = (['y','x'], object.Uav.astype('float64'))
         object.dsav['Ut'].attrs['name'] = 'Ocean velocity in x-direction on tgrid'
         object.dsav['Ut'].attrs['units'] = 'm/s'
+
+        object.dsav['U2t'] = (['y','x'], object.Uav.astype('float64'))
+        object.dsav['U2t'].attrs['name'] = 'Ocean velocity in x-direction on tgrid'
+        object.dsav['U2t'].attrs['units'] = 'm/s'
 
     #U velocity on ugrid
     if object.save_Uu:
@@ -564,6 +569,11 @@ def prepare_output(object):
         object.dsav['Uu'].attrs['name'] = 'Ocean velocity in x-direction on ugrid'
         object.dsav['Uu'].attrs['units'] = 'm/s'
 
+        object.U2uav = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['U2u'] = (['y','xu'], object.U2uav.astype('float64'))
+        object.dsav['U2u'].attrs['name'] = 'Ocean velocity in x-direction on ugrid'
+        object.dsav['U2u'].attrs['units'] = 'm/s'
+
     #V velocity on tgrid
     if object.save_Vt:
         object.Vav = np.zeros((object.ny_full,object.nx_full))
@@ -571,12 +581,22 @@ def prepare_output(object):
         object.dsav['Vt'].attrs['name'] = 'Ocean velocity in y-direction'
         object.dsav['Vt'].attrs['units'] = 'm/s'
 
+        object.V2av = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['V2t'] = (['y','x'], object.V2av.astype('float64'))
+        object.dsav['V2t'].attrs['name'] = 'Ocean velocity in y-direction'
+        object.dsav['V2t'].attrs['units'] = 'm/s'
+
     #U velocity on ugrid
     if object.save_Vv:
         object.Vvav = np.zeros((object.ny_full,object.nx_full))
         object.dsav['Vv'] = (['yv','x'], object.Vvav.astype('float64'))
         object.dsav['Vv'].attrs['name'] = 'Ocean velocity in y-direction on vgrid'
         object.dsav['Vv'].attrs['units'] = 'm/s'
+
+        object.V2vav = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['V2v'] = (['yv','x'], object.V2vav.astype('float64'))
+        object.dsav['V2v'].attrs['name'] = 'Ocean velocity in y-direction on vgrid'
+        object.dsav['V2v'].attrs['units'] = 'm/s'
 
     #Thickness D
     if object.save_D:
