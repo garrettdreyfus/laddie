@@ -251,8 +251,8 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
     while True:
         maxdiff =0 
         absdiff=0
-        for i in range(1,Nx-2):
-            for j in range(1,Ny-2):
+        for i in range(1,Nx-1):
+            for j in range(1,Ny-1):
                 pi_prev = pi[i,j]
                 #pi[i,j] = (1-rp)*pi[i,j] \
                             #+ rp * Osum[i,j] \
@@ -260,16 +260,16 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
                 pi[i,j] = (1-rp)*pi[i,j] - rp * Osum[i,j]*pi_rhs[i,j]
 
                 if tmask[i+1,j]:
-                    pi[i,j] += rp*Osum[i,j]*Os[i+1,j]*pi[i+1,j]
+                    pi[i,j] += rp*Osum[i,j]*Os[i,j]*pi[i+1,j]
 ##
                 if tmask[i-1,j]:
-                    pi[i,j] += rp*Osum[i,j]*Os[i,j]*pi[i-1,j]
+                    pi[i,j] += rp*Osum[i,j]*Os[i-1,j]*pi[i-1,j]
 #
                 if tmask[i,j+1]:
-                    pi[i,j] += rp*Osum[i,j]*Ow[i,j+1]*pi[i,j+1]
+                    pi[i,j] += rp*Osum[i,j]*Ow[i,j]*pi[i,j+1]
 ##
                 if tmask[i,j-1]:
-                    pi[i,j] += rp*Osum[i,j]*Ow[i,j]*pi[i,j-1]
+                    pi[i,j] += rp*Osum[i,j]*Ow[i,j-1]*pi[i,j-1]
 #
                 absdiff = abs(pi_prev-pi[i,j])
                 if absdiff>maxdiff:
@@ -283,50 +283,54 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
 
 @njit
 def assemble_pi_rhs(pi_rhs,hu,hv,dx,dy,dt,umask,vmask):
-    for i in range(1,pi_rhs.shape[0]-1):
-        for j in range(1,pi_rhs.shape[1]-1):
-            if vmask[i,j]:
-                pi_rhs[i][j] = pi_rhs[i,j] - hv[i,j]/(dy*dt)
-                pi_rhs[i-1][j] = pi_rhs[i-1,j]+ hv[i,j]/(dy*dt)
-            if umask[i,j]:
-                pi_rhs[i][j] = pi_rhs[i,j] - hu[i,j]/(dx*dt)
-                pi_rhs[i][j-1] = pi_rhs[i,j-1] + hu[i,j]/(dx*dt)
+    for i in range(1,pi_rhs.shape[0]):
+        for j in range(1,pi_rhs.shape[1]):
+            if vmask[i,j]!=0:
+                pi_rhs[i][j] = pi_rhs[i,j] + hv[i,j]/(dy*dt)
+                pi_rhs[i+1][j] = pi_rhs[i+1,j]- hv[i,j]/(dy*dt)
+            if umask[i,j]!=0:
+                pi_rhs[i][j] = pi_rhs[i,j] + hu[i,j]/(dx*dt)
+                pi_rhs[i][j+1] = pi_rhs[i,j+1] - hu[i,j]/(dx*dt)
     return pi_rhs
 #SOR_jit = jit(SOR)
 
 #def create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
     #for i in range:
 
-@njit
 def assemble_Osum(H,tmask,dx,dy):
     Osum = np.zeros(H.shape)
     Os = np.zeros(H.shape)
     Ow = np.zeros(H.shape)
     dx2q=dx**2
     dy2q=dy**2
-    for i in range(1,H.shape[0]-1):
-        for j in range(1,H.shape[1]-1):
-            if tmask[i,j-1]==1 and tmask[i,j]==1:
-                h_west=(H[i,j-1]+H[i,j])/2.0
+    for i in range(0,H.shape[0]-1):
+        for j in range(0,H.shape[1]-1):
+            if tmask[i,j+1] and tmask[i,j]:
+                h_west=(H[i,j+1]+H[i,j])/2.0
             else:
                 h_west=0
-            if tmask[i-1,j]==1 and tmask[i,j]==1:
-                h_south=(H[i-1,j]+H[i,j])/2.0
+            if tmask[i+1,j] and tmask[i,j]:
+                h_south=(H[i+1,j]+H[i,j])/2.0
             else:
                 h_south =0 
             Ow[i,j]=h_west/dx2q
             Os[i,j]=h_south/dy2q
-
-    for i in range(H.shape[0]-2):
-        for j in range(H.shape[1]-2):
+    fig,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
+    ax1.imshow(Ow)
+    ax2.imshow(Os)
+    ax3.imshow((Os==0) & (tmask==1))
+    ax4.imshow(tmask==1)
+    plt.show()
+    for i in range(1,H.shape[0]):
+        for j in range(1,H.shape[1]):
             Osum[i,j]+=Ow[i,j]+Os[i,j]
-            if tmask[i,j+1]==1:
-                Osum[i,j]+=Ow[i,j+1]
-            if tmask[i+1,j]==1:
-                Osum[i,j]+=Os[i+1,j]
+            if tmask[i,j-1]==1:
+                Osum[i,j]+=Ow[i,j-1]
+            if tmask[i-1,j]==1:
+                Osum[i,j]+=Os[i-1,j]
 
-    for i in range(0,H.shape[0]-1):
-        for j in range(0,H.shape[1]-1):
+    for i in range(H.shape[0]):
+        for j in range(0,H.shape[1]):
             if tmask[i,j]:
                 Osum[i,j] = 1.0/Osum[i,j]
             else:
@@ -350,42 +354,48 @@ def surface_pressure(object,delt):
     X=Xnew
     Y=Ynew
     print("-------")
-    object.tmask[:]=1
-    object.umask[:]=1
-    object.vmask[:]=1
+    #object.vmask=np.roll(object.vmask,1,axis=0)
+    #object.tmask[:]=1
+    #object.umask[:]=1
+    #object.vmask[:]=1
 
-    object.H[:]=20
-    object.H[:10,:]=0
-    object.H[-10:,:]=0
-    object.H[:,:10]=0
-    object.H[:,-10:]=0
+    #object.H[:]=20
+    #object.H[:10,:]=0
+    #object.H[-10:,:]=0
+    #object.H[:,:10]=0
+    #object.H[:,-10:]=0
 
-    object.tmask[:10,:]=0
-    object.tmask[-10:,:]=0
-    object.tmask[:,:10]=0
-    object.tmask[:,-10:]=0
+    #object.tmask[:10,:]=0
+    #object.tmask[-10:,:]=0
+    #object.tmask[:,:10]=0
+    #object.tmask[:,-10:]=0
 
 
 #
-    object.umask[:10,:]=0
-    object.umask[-10:,:]=0
-    object.umask[:,:11]=0
-    object.umask[:,-10:]=0
+    #object.umask[:10,:]=0
+    #object.umask[-10:,:]=0
+    #object.umask[:,:11]=0
+    #object.umask[:,-10:]=0
 
-    object.vmask[:11,:]=0
-    object.vmask[-10:,:]=0
-    object.vmask[:,:10]=0
-    object.vmask[:,-10:]=0
+    #object.vmask[:11,:]=0
+    #object.vmask[-10:,:]=0
+    #object.vmask[:,:10]=0
+    #object.vmask[:,-10:]=0
 
-    object.D[:]=10
-    object.D2[:]=10
+    #object.D[:]=10
+    #object.D2[:]=10
     object.D2[1][object.tmask==0]=0
     object.D[1][object.tmask==0]=0
 
-    object.Ustar[:] = 0
-    object.Vstar[:] = (-Y/10)*object.vmask#object.D[1]
-    object.Ustar2[:] = 0
-    object.Vstar2[:] = (-Y/10)*object.vmask#object.D2[1]
+    object.Vstar[:] = 0
+    object.Ustar[:] = (-Y/10)*object.vmask#object.D[1]
+    object.Vstar2[:] = 0
+    object.Ustar2[:] = (-Y/10)*object.vmask#object.D2[1]
+
+    #object.Vstar[:] = (-Y/10)*object.vmask#object.D[1]
+    #object.Ustar[:] = 0
+    #object.Vstar2[:] = (-Y/10)*object.vmask#object.D2[1]
+    #object.Ustar2[:] = 0
     #hu1 = object.Ustar*Dw#im_t(object,object.D[1])
     #hv1 = object.Vstar*Ds#jm_t(object,object.D[1])
     #hu2 = object.Ustar2*D2s#im_t(object,object.D2[1])
@@ -394,16 +404,10 @@ def surface_pressure(object,delt):
 
 
     #You have to fix this !!!!
-
-    object.tmaskyp1    = np.roll(object.tmask, 1,axis=0)
-    object.tmaskxp1    = np.roll(object.tmask, 1,axis=1)    
-    object.tmask_im = object.tmask+object.tmaskxp1
-    object.tmask_jm = object.tmask+object.tmaskyp1
-
-    hu1 = object.Ustar*tools.im_t(object,object.D[1])
-    hv1 = object.Vstar*tools.jm_t(object,object.D[1])
-    hu2 = object.Ustar2*tools.im_t(object,object.D2[1])
-    hv2 = object.Vstar2*tools.jm_t(object,object.D2[1])
+    hu1 = object.Ustar*10#tools.im_t(object,object.D[1])
+    hv1 = object.Vstar*10#tools.jm_t(object,object.D[1])
+    hu2 = object.Ustar2*10#tools.im_t(object,object.D2[1])
+    hv2 = object.Vstar2*10#tools.jm_t(object,object.D2[1])
 #
 
     if (object.pressure_solves)%1 ==0 and True:
@@ -434,7 +438,7 @@ def surface_pressure(object,delt):
     pi_rhs = np.zeros(hu1.shape)
     pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
 
-    plt.imshow(object.tmask)
+    plt.imshow(object.grlW)
     plt.show()
     if object.pressure_solves==0:
         Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
@@ -450,6 +454,7 @@ def surface_pressure(object,delt):
     plt.imshow(object.Osum)
     plt.show()
     plt.suptitle("pi_rhs")
+    #pi_rhs[object.tmask==0]=np.nan
     plt.imshow(pi_rhs)
     plt.show()
 #
@@ -482,14 +487,14 @@ def surface_pressure(object,delt):
     #object.U2[2,:,:] = object.Ustar2 + delt*pressure_diff_u(object,pi,1,1)/(object.dx)*object.umask
     #object.V[2,:,:] = object.Vstar + delt*pressure_diff_v(object,pi,0,1)/(object.dy)*object.vmask
     #object.V2[2,:,:] = object.Vstar2 + delt*pressure_diff_v(object,pi,0,1)/(object.dy)*object.vmask
-    pi_x = delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)
-    pi_x[np.roll(object.tmask,1,axis=1)!=object.tmask]=0
-    pi_y = delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)
-    pi_y[np.roll(object.tmask,1,axis=0)!=object.tmask]=0
-    object.U[2,:,:] = (object.Ustar + pi_x)
-    object.U2[2,:,:] = (object.Ustar2 + pi_x)
-    object.V[2,:,:] = (object.Vstar + pi_y)
-    object.V2[2,:,:] = (object.Vstar2 + pi_y)
+    pi_x = -delt*(np.roll(pi,-1,axis=1)-pi)/(object.dx)
+    pi_x[np.roll(object.tmask,-1,axis=1)!=object.tmask]=0
+    pi_y = -delt*(np.roll(pi,-1,axis=0)-pi)/(object.dy)
+    pi_y[np.roll(object.tmask,-1,axis=0)!=object.tmask]=0
+    object.U[2,:,:] = (object.Ustar + pi_x)*object.umask
+    object.U2[2,:,:] = (object.Ustar2 + pi_x)*object.umask
+    object.V[2,:,:] = (object.Vstar + pi_y)*object.vmask
+    object.V2[2,:,:] = (object.Vstar2 + pi_y)*object.vmask
 
     hu1 = object.U[2]*10#tools.im(object.D[1])
     hv1 = object.V[2]*10#tools.jm(object.D[1])
