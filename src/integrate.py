@@ -274,8 +274,8 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
                 absdiff = abs(pi_prev-pi[i,j])
                 if absdiff>maxdiff:
                     maxdiff=absdiff
-        if iters%100000==0:
-            print(maxdiff)
+        #if iters%100000==0:
+            #print(maxdiff)
         if maxdiff<pi_tol:
             print("SOR: ",iters)
             return pi
@@ -297,6 +297,7 @@ def assemble_pi_rhs(pi_rhs,hu,hv,dx,dy,dt,umask,vmask):
 #def create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
     #for i in range:
 
+@njit
 def assemble_Osum(H,tmask,dx,dy):
     Osum = np.zeros(H.shape)
     Os = np.zeros(H.shape)
@@ -315,12 +316,6 @@ def assemble_Osum(H,tmask,dx,dy):
                 h_south =0 
             Ow[i,j]=h_west/dx2q
             Os[i,j]=h_south/dy2q
-    fig,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
-    ax1.imshow(Ow)
-    ax2.imshow(Os)
-    ax3.imshow((Os==0) & (tmask==1))
-    ax4.imshow(tmask==1)
-    plt.show()
     for i in range(1,H.shape[0]):
         for j in range(1,H.shape[1]):
             Osum[i,j]+=Ow[i,j]+Os[i,j]
@@ -343,18 +338,17 @@ def assemble_Osum(H,tmask,dx,dy):
 
 
 def surface_pressure(object,delt):
-
-    X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
-    X = (X-np.max(X)/2)/np.max(X)
-    Y = (Y-np.max(Y)/2)/np.max(Y)
-    Xnew = X/(0.1*(X**2+Y**2))
-    Xnew[np.abs(Xnew)>100]=100*np.sign(Xnew[np.abs(Xnew)>100])
-    Ynew = Y/(0.1*(X**2+Y**2))
-    Ynew[np.abs(Ynew)>100]=100*np.sign(Ynew[np.abs(Ynew)>100])
-    X=Xnew
-    Y=Ynew
-    print("-------")
-    #object.vmask=np.roll(object.vmask,1,axis=0)
+    ##X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
+    #X = (X-np.max(X)/2)/np.max(X)
+    #Y = (Y-np.max(Y)/2)/np.max(Y)
+    #Xnew = X/(0.1*(X**2+Y**2))
+    #Xnew[np.abs(Xnew)>100]=100*np.sign(Xnew[np.abs(Xnew)>100])
+    #Ynew = Y/(0.1*(X**2+Y**2))
+    ##Ynew[np.abs(Ynew)>100]=100*np.sign(Ynew[np.abs(Ynew)>100])
+    #X=Xnew
+    #Y=Ynew
+    #print("-------")
+    ##object.vmask=np.roll(object.vmask,1,axis=0)
     #object.tmask[:]=1
     #object.umask[:]=1
     #object.vmask[:]=1
@@ -384,19 +378,19 @@ def surface_pressure(object,delt):
 
     #object.D[:]=10
     #object.D2[:]=10
-    object.D2[1][object.tmask==0]=0
-    object.D[1][object.tmask==0]=0
+    #object.D2[1][object.tmask==0]=0
+    #object.D[1][object.tmask==0]=0
 
-    object.Vstar[:] = 0
-    object.Ustar[:] = (-Y/10)*object.vmask#object.D[1]
-    object.Vstar2[:] = 0
-    object.Ustar2[:] = (-Y/10)*object.vmask#object.D2[1]
-
+    #object.Vstar[:] = 0
+    #object.Ustar[:] = (-Y/10)*object.vmask#object.D[1]
+    #object.Vstar2[:] = 0
+    #object.Ustar2[:] = (-Y/10)*object.vmask#object.D2[1]
+#
     #object.Vstar[:] = (-Y/10)*object.vmask#object.D[1]
     #object.Ustar[:] = 0
     #object.Vstar2[:] = (-Y/10)*object.vmask#object.D2[1]
     #object.Ustar2[:] = 0
-    #hu1 = object.Ustar*Dw#im_t(object,object.D[1])
+    ##hu1 = object.Ustar*Dw#im_t(object,object.D[1])
     #hv1 = object.Vstar*Ds#jm_t(object,object.D[1])
     #hu2 = object.Ustar2*D2s#im_t(object,object.D2[1])
     #hv2 = object.Vstar2*D2w#jm_t(object,object.D2[1])
@@ -404,13 +398,14 @@ def surface_pressure(object,delt):
 
 
     #You have to fix this !!!!
-    hu1 = object.Ustar*10#tools.im_t(object,object.D[1])
-    hv1 = object.Vstar*10#tools.jm_t(object,object.D[1])
-    hu2 = object.Ustar2*10#tools.im_t(object,object.D2[1])
-    hv2 = object.Vstar2*10#tools.jm_t(object,object.D2[1])
+    hu1 = object.Ustar*tools.ip_t(object,object.D[1])
+    hv1 = object.Vstar*tools.jp_t(object,object.D[1])
+    hu2 = object.Ustar2*tools.ip_t(object,object.D2[1])
+    hv2 = object.Vstar2*tools.jp_t(object,object.D2[1])
+    debug = True
 #
 
-    if (object.pressure_solves)%1 ==0 and True:
+    if (object.pressure_solves)%1 ==0 and True and debug:
 
         #termu = - object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/(object.dx)
         #termu[object.umask==0]=np.nan
@@ -438,8 +433,6 @@ def surface_pressure(object,delt):
     pi_rhs = np.zeros(hu1.shape)
     pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
 
-    plt.imshow(object.grlW)
-    plt.show()
     if object.pressure_solves==0:
         Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
         object.Osum = Osum
@@ -450,26 +443,28 @@ def surface_pressure(object,delt):
     ##Osum=np.roll(Osum,1,axis=0)
     #Osum=np.roll(Osum,1,axis=1)
 ##
-    plt.suptitle("OSUM")
-    plt.imshow(object.Osum)
-    plt.show()
-    plt.suptitle("pi_rhs")
-    #pi_rhs[object.tmask==0]=np.nan
-    plt.imshow(pi_rhs)
-    plt.show()
-#
+    if debug:
+        plt.suptitle("OSUM")
+        plt.imshow(object.Osum)
+        plt.show()
+        plt.suptitle("pi_rhs")
+        #pi_rhs[object.tmask==0]=np.nan
+        plt.imshow(pi_rhs)
+        plt.show()
+    #
 
-    print("conv: ", np.sum(np.abs(pi_rhs)))
+    print("before conv: ", np.sum(np.abs(pi_rhs)))
     rp=0.66
     if object.pressure_solves >3:
-        rp=1.5
-    pi_tol = 10**-21
+        rp=1.9
+    pi_tol = 10**-11
     pi = object.RL[1]
     iters = 0
     pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
-    plt.suptitle("pi")
-    plt.imshow(pi)
-    plt.show()
+    if debug:
+        plt.suptitle("pi")
+        plt.imshow(pi)
+        plt.show()
 
 
 
@@ -491,28 +486,29 @@ def surface_pressure(object,delt):
     pi_x[np.roll(object.tmask,-1,axis=1)!=object.tmask]=0
     pi_y = -delt*(np.roll(pi,-1,axis=0)-pi)/(object.dy)
     pi_y[np.roll(object.tmask,-1,axis=0)!=object.tmask]=0
-    object.U[2,:,:] = (object.Ustar + pi_x)*object.umask
-    object.U2[2,:,:] = (object.Ustar2 + pi_x)*object.umask
-    object.V[2,:,:] = (object.Vstar + pi_y)*object.vmask
-    object.V2[2,:,:] = (object.Vstar2 + pi_y)*object.vmask
+    object.U[2,:,:] = (object.Ustar + pi_x)
+    object.U2[2,:,:] = (object.Ustar2 + pi_x)
+    object.V[2,:,:] = (object.Vstar + pi_y)
+    object.V2[2,:,:] = (object.Vstar2 + pi_y)
 
-    hu1 = object.U[2]*10#tools.im(object.D[1])
-    hv1 = object.V[2]*10#tools.jm(object.D[1])
-    hu2 = object.U2[2]*10#tools.im(object.D2[1])
-    hv2 = object.V2[2]*10#tools.jm(object.D2[1])
+    hu1 = object.U[2]*tools.ip_t(object,object.D[1])*object.umask
+    hv1 = object.V[2]*tools.jp_t(object,object.D[1])*object.vmask
+    hu2 = object.U2[2]*tools.ip_t(object,object.D2[1])*object.umask
+    hv2 = object.V2[2]*tools.jp_t(object,object.D2[1])*object.vmask
 
     pi_rhs = np.zeros(hu1.shape)
     pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
-    print("conv: ", np.sum(np.abs(pi_rhs)))
-    plt.imshow(pi_rhs)
-    plt.show()
-    plt.quiver(object.U[2],object.V[2])
-    plt.show()
-#
-    breakpoint()
+    print("after conv: ", np.sum(np.abs(pi_rhs)))
+    if debug:
+        plt.imshow(pi_rhs)
+        plt.show()
+        plt.quiver(hu1+hu2,hv1+hv2)
+        plt.show()
+    #
+    #breakpoint()
 
     object.pressure_solves+=1
-    if (object.pressure_solves)%1 ==0:
+    if (object.pressure_solves)%1000 ==0:
         fig, (ax1,ax2) = plt.subplots(1,2)
         ax1.imshow(pi_x)
         ax2.imshow(pi_y)
