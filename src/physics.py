@@ -95,28 +95,6 @@ def convT(object,var):
         tW =   (object.Uxp1pos*np.roll(var,1,axis=1) + object.Uxp1neg*var                   ) / object.dx * object.umaskxp1               
     return tN+tS+tE+tW
 
-def convH(object):
-    """Convergence for DU"""
-    
-    #Get D at north, south, east, west points of U-grid
-    DN = div0((object.H + object.Hxm1 + object.Hym1 + object.Hxm1ym1),(object.tmask + object.tmaskxm1 + object.tmaskym1 + object.tmaskxm1ym1))
-    DS = div0((object.H + object.Hxm1 + object.Hyp1 + object.Hxm1yp1),(object.tmask + object.tmaskxm1 + object.tmaskyp1 + object.tmaskxm1yp1))
-    DE = object.Hxm1     + object.ocnxm1 * object.H
-    DW = object.H + object.ocn    * object.Hxm1
-    
-    tN = -DN *        object.V2ip           *(object.U2jp -    object.slip  * object.U2[1,:,:] * object.grdNu ) /object.dy
-    tS =  DS *np.roll(object.V2ip,1,axis=0) *(object.U2jm -    object.slip  * object.U2[1,:,:] * object.grdSu ) /object.dy
-    tE = -DE *        object.U2ip           *(object.U2ip - (1-object.signU2)* object.U2[1,:,:] * object.ocnxm1) /object.dx
-    tW =  DW *        object.U2im           *(object.U2im -    object.signU2 * object.U2[1,:,:] * object.ocn   ) /object.dx
- 
-    tN = -DN *        object.Vip           *(object.Ujp -    object.slip  * object.U[1,:,:] * object.grdNu ) /object.dy
-    tS =  DS *np.roll(object.Vip,1,axis=0) *(object.Ujm -    object.slip  * object.U[1,:,:] * object.grdSu ) /object.dy
-    tE = -DE *        object.Uip           *(object.Uip - (1-object.signU)* object.U[1,:,:] * object.ocnxm1) /object.dx
-    tW =  DW *        object.Uim           *(object.Uim -    object.signU * object.U[1,:,:] * object.ocn   ) /object.dx
-    
-    
-    return tN+tS+tE+tW
-
 
 def convU2(object):
     """Convergence for DU"""

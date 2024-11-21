@@ -5,8 +5,8 @@ days = 10        # [days] run duration
 [Time]
 dt = 20        # [s] timestep
 restday = 1    # [days] interval to save restartfile
-saveday = 1    # [days] interval to save model output
-#saveday = 0.2315    # [days] interval to save model output
+#saveday = 1    # [days] interval to save model output
+saveday = 0.2315    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
@@ -23,10 +23,10 @@ removebergs = true        # Remove icebergs
 option = "linear" # Available options: 'file', 'tanh', 'linear', 'isomip', and 'linear2'
 #filename = "./input/forc_test.nc" #File containing T and S profiles, called if option = 'file
 z0    = -720    # [m] Reference depth used in 'tanh' and 'linear', 'isomip', and 'linear2'
-S0    = 34.0    # [psu] Surface salinity used in 'tanh'
-S1    = 35.0    # [psu] Salinity at depth z0 used in 'linear', 'linear2'
-T1    = 1.0     # [degC] Temperature at depth used in 'tanh'
-z1    = 100     # [m] Depth scale used in 'tanh'
+S0    = 32.0    # [psu] Surface salinity used in 'tanh'
+S1    = 37.0    # [psu] Salinity at depth z0 used in 'linear', 'linear2'
+T1    = 2.0     # [degC] Temperature at depth used in 'tanh'
+z1    = 200     # [m] Depth scale used in 'tanh'
 drho0 = 0.01    # [kg/m3 /m2] Scaling factor for quadratic density profile 
 isomipcond = "warm" # ISOMIP condition, either 'warm' or 'cold'
 

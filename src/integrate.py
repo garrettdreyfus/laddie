@@ -180,7 +180,7 @@ def generate_stars(object,delt):
 
                     ## PRESSURE TERMS
                     ### --------------------
-                    + object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*pressure_diff_u(object,object.drho,1,-1)/(object.dx) \
+                    - object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/(object.dx) \
                             
                     ### --------------------
 
@@ -201,7 +201,7 @@ def generate_stars(object,delt):
                     #PRESSURE TERMS
                     #-------------------------
                     #- .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    + object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(pressure_diff_v(object,object.drho,0,-1))/(object.dy) \
+                    - object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/(object.dy) \
                     #-------------------------
 
                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
@@ -219,7 +219,7 @@ def generate_stars(object,delt):
                     ## PRESSURE TERMS
                     ### --------------------
                     #-  .5*object.g*ip_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D2[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-                    + ip_t(object,object.D2[1,:,:])*pressure_diff_u(object,object.TWterm,1,-1)/(object.dx)\
+                    - ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx)\
                     ### --------------------
 
                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
@@ -236,7 +236,7 @@ def generate_stars(object,delt):
                     #PRESSURE TERMS
                     #-------------------------
                     #- .5*object.g*jp_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    + jp_t(object,object.D2[1,:,:])*(pressure_diff_v(object,object.TWterm,0,-1))/(object.dy)\
+                    - jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy)\
                     #-------------------------
 
                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
@@ -251,12 +251,26 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
     while True:
         maxdiff =0 
         absdiff=0
-        for i in range(1,Nx):
-            for j in range(1,Ny):
+        for i in range(1,Nx-2):
+            for j in range(1,Ny-2):
                 pi_prev = pi[i,j]
-                pi[i,j] = (1-rp)*pi[i,j] \
-                            + rp * Osum[i,j] \
-                                *  ( Os[i+1,j]*pi[i+1,j] + Os[i,j]*pi[i-1][j] + Ow[i,j+1]*pi[i,j+1] + Ow[i,j]*pi[i,j-1] - pi_rhs[i,j] );
+                #pi[i,j] = (1-rp)*pi[i,j] \
+                            #+ rp * Osum[i,j] \
+                                #*  ( Os[i+1,j]*pi[i+1,j] + Os[i,j]*pi[i-1][j] + Ow[i,j+1]*pi[i,j+1] + Ow[i,j]*pi[i,j-1] - pi_rhs[i,j] );
+                pi[i,j] = (1-rp)*pi[i,j] - rp * Osum[i,j]*pi_rhs[i,j]
+
+                if tmask[i+1,j]:
+                    pi[i,j] += rp*Osum[i,j]*Os[i+1,j]*pi[i+1,j]
+##
+                if tmask[i-1,j]:
+                    pi[i,j] += rp*Osum[i,j]*Os[i,j]*pi[i-1,j]
+#
+                if tmask[i,j+1]:
+                    pi[i,j] += rp*Osum[i,j]*Ow[i,j+1]*pi[i,j+1]
+##
+                if tmask[i,j-1]:
+                    pi[i,j] += rp*Osum[i,j]*Ow[i,j]*pi[i,j-1]
+#
                 absdiff = abs(pi_prev-pi[i,j])
                 if absdiff>maxdiff:
                     maxdiff=absdiff
@@ -267,118 +281,191 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
             return pi
         iters+=1
 
+@njit
+def assemble_pi_rhs(pi_rhs,hu,hv,dx,dy,dt,umask,vmask):
+    for i in range(1,pi_rhs.shape[0]-1):
+        for j in range(1,pi_rhs.shape[1]-1):
+            if vmask[i,j]:
+                pi_rhs[i][j] = pi_rhs[i,j] - hv[i,j]/(dy*dt)
+                pi_rhs[i-1][j] = pi_rhs[i-1,j]+ hv[i,j]/(dy*dt)
+            if umask[i,j]:
+                pi_rhs[i][j] = pi_rhs[i,j] - hu[i,j]/(dx*dt)
+                pi_rhs[i][j-1] = pi_rhs[i,j-1] + hu[i,j]/(dx*dt)
+    return pi_rhs
 #SOR_jit = jit(SOR)
 
 #def create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
     #for i in range:
 
+@njit
+def assemble_Osum(H,tmask,dx,dy):
+    Osum = np.zeros(H.shape)
+    Os = np.zeros(H.shape)
+    Ow = np.zeros(H.shape)
+    dx2q=dx**2
+    dy2q=dy**2
+    for i in range(1,H.shape[0]-1):
+        for j in range(1,H.shape[1]-1):
+            if tmask[i,j-1]==1 and tmask[i,j]==1:
+                h_west=(H[i,j-1]+H[i,j])/2.0
+            else:
+                h_west=0
+            if tmask[i-1,j]==1 and tmask[i,j]==1:
+                h_south=(H[i-1,j]+H[i,j])/2.0
+            else:
+                h_south =0 
+            Ow[i,j]=h_west/dx2q
+            Os[i,j]=h_south/dy2q
+
+    for i in range(H.shape[0]-2):
+        for j in range(H.shape[1]-2):
+            Osum[i,j]+=Ow[i,j]+Os[i,j]
+            if tmask[i,j+1]==1:
+                Osum[i,j]+=Ow[i,j+1]
+            if tmask[i+1,j]==1:
+                Osum[i,j]+=Os[i+1,j]
+
+    for i in range(0,H.shape[0]-1):
+        for j in range(0,H.shape[1]-1):
+            if tmask[i,j]:
+                Osum[i,j] = 1.0/Osum[i,j]
+            else:
+                Osum[i,j] = 0
+
+
+    return Osum,Os,Ow
+
+
+
 
 def surface_pressure(object,delt):
+
+    X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
+    X = (X-np.max(X)/2)/np.max(X)
+    Y = (Y-np.max(Y)/2)/np.max(Y)
+    Xnew = X/(0.1*(X**2+Y**2))
+    Xnew[np.abs(Xnew)>100]=100*np.sign(Xnew[np.abs(Xnew)>100])
+    Ynew = Y/(0.1*(X**2+Y**2))
+    Ynew[np.abs(Ynew)>100]=100*np.sign(Ynew[np.abs(Ynew)>100])
+    X=Xnew
+    Y=Ynew
     print("-------")
-    #object.Ustar[:] = 1
-    #object.Vstar[:] = 1
-    #object.Ustar2[:] = 1
-    #object.Vstar2[:] = 1
-    hu1 = object.Ustar*im_t(object,object.D[1])
-    hv1 = object.Vstar*jm_t(object,object.D[1])
-    hu2 = object.Ustar2*im_t(object,object.D2[1])
-    hv2 = object.Vstar2*jm_t(object,object.D2[1])
+    object.tmask[:]=1
+    object.umask[:]=1
+    object.vmask[:]=1
 
-    # fig, (ax1,ax2) = plt.subplots(1,2)
-    # ax1.imshow(object.Ustar)
-    # ax2.imshow(object.Ustar2)
-    # plt.show()
+    object.H[:]=20
+    object.H[:10,:]=0
+    object.H[-10:,:]=0
+    object.H[:,:10]=0
+    object.H[:,-10:]=0
+
+    object.tmask[:10,:]=0
+    object.tmask[-10:,:]=0
+    object.tmask[:,:10]=0
+    object.tmask[:,-10:]=0
 
 
-    # fig,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
-    # termu = object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*pressure_diff_u(object,object.drho,1,-1)/(object.dx)
-    # termu[object.umask==0]=np.nan
-    # termv = object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(pressure_diff_v(object,object.drho,0,-1))/(object.dy) 
-    # termv[object.vmask==0]=np.nan
+#
+    object.umask[:10,:]=0
+    object.umask[-10:,:]=0
+    object.umask[:,:11]=0
+    object.umask[:,-10:]=0
 
-    # termu2 = ip_t(object,object.D2[1,:,:])*pressure_diff_u(object,object.TWterm,1,-1)/(object.dx)
-    # termu2[object.umask==0]=np.nan
-    # termv2 = jp_t(object,object.D2[1,:,:])*(pressure_diff_v(object,object.TWterm,0,-1))/(object.dy)
-    # termv2[object.vmask==0]=np.nan
+    object.vmask[:11,:]=0
+    object.vmask[-10:,:]=0
+    object.vmask[:,:10]=0
+    object.vmask[:,-10:]=0
 
-    # im = ax1.imshow(termu)
-    # plt.colorbar(im,ax=ax1)
-    # im = ax2.imshow(termv)
-    # plt.colorbar(im,ax=ax2)
-    # im = ax3.imshow(termu2)
-    # plt.colorbar(im,ax=ax3)
-    # im = ax4.imshow(termv2)
-    # plt.colorbar(im,ax=ax4)
-    # plt.show()
-    # plt.imshow(object.D[1]+object.D2[1])
-    # plt.show()
-    # exit()
+    object.D[:]=10
+    object.D2[:]=10
+    object.D2[1][object.tmask==0]=0
+    object.D[1][object.tmask==0]=0
+
+    object.Ustar[:] = 0
+    object.Vstar[:] = (-Y/10)*object.vmask#object.D[1]
+    object.Ustar2[:] = 0
+    object.Vstar2[:] = (-Y/10)*object.vmask#object.D2[1]
+    #hu1 = object.Ustar*Dw#im_t(object,object.D[1])
+    #hv1 = object.Vstar*Ds#jm_t(object,object.D[1])
+    #hu2 = object.Ustar2*D2s#im_t(object,object.D2[1])
+    #hv2 = object.Vstar2*D2w#jm_t(object,object.D2[1])
+
+
+
+    #You have to fix this !!!!
+
+    object.tmaskyp1    = np.roll(object.tmask, 1,axis=0)
+    object.tmaskxp1    = np.roll(object.tmask, 1,axis=1)    
+    object.tmask_im = object.tmask+object.tmaskxp1
+    object.tmask_jm = object.tmask+object.tmaskyp1
+
+    hu1 = object.Ustar*tools.im_t(object,object.D[1])
+    hv1 = object.Vstar*tools.jm_t(object,object.D[1])
+    hu2 = object.Ustar2*tools.im_t(object,object.D2[1])
+    hv2 = object.Vstar2*tools.jm_t(object,object.D2[1])
+#
+
+    if (object.pressure_solves)%1 ==0 and True:
+
+        #termu = - object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/(object.dx)
+        #termu[object.umask==0]=np.nan
+        #termv = - object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/(object.dy) 
+        #termv[object.vmask==0]=np.nan
+
+        #termu2 = - ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx)
+        #termu2[object.umask==0]=np.nan
+        #termv2 = - jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy)
+        #termv2[object.vmask==0]=np.nan
+        fig,((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
+        im = ax1.imshow(hu1)
+        plt.colorbar(im,ax=ax1)
+        im = ax2.imshow(hv1)
+        plt.colorbar(im,ax=ax2)
+        im = ax3.imshow(hu2)
+        plt.colorbar(im,ax=ax3)
+        im = ax4.imshow(hv2)
+        plt.colorbar(im,ax=ax4)
+        plt.show()
+
+
+
 
     pi_rhs = np.zeros(hu1.shape)
+    pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
 
-
-    pi_rhs -= hv1/(object.dy*delt)
-    pi_rhs += np.roll(hv1/(object.dy*delt),-1,axis=0)
-    #pi_rhs += aware_diff_v(object,hv1,0,-1)/(object.dy*delt)
-    #pi_rhs += aware_diff_v(object,hv1,0,-1)
-
-    pi_rhs -= hv2/(object.dy*delt)
-    pi_rhs += np.roll(hv2/(object.dy*delt),-1,axis=0)
-    #pi_rhs += aware_diff_v(object,hv2,0,-1)/(object.dy*delt)
-
-    pi_rhs -= hu1/(object.dx*delt)
-    pi_rhs += np.roll(hu1/(object.dx*delt),-1,axis=1)
-    #pi_rhs += aware_diff_u(object,hu1,1,-1)/(object.dx*delt)
-
-    pi_rhs -= hu2/(object.dx*delt)
-    pi_rhs += np.roll(hu2/(object.dx*delt),-1,axis=1)
-    #pi_rhs += aware_diff_u(object,hu2,1,-1)/(object.dx*delt)
-    pi_rhs=convH(object)
-    #pi_rhs = create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
-    #pi_rhs[object.tmask==0]=np.nan
-
-    ## think thats good
+    plt.imshow(object.tmask)
+    plt.show()
     if object.pressure_solves==0:
-        H = object.H
-        #plt.imshow((object.D2[1]<0))
-        #plt.show()
-
-        #preHs = np.roll(H,1,axis=0)
-        #preHs[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]=H[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]
-        #Hs = (H + preHs)/2
-        Hs = tools.im_v(object,H)
-        #Hs = (1/3) *  (H+np.roll(H,1,axis=0)+0.25*(np.roll(H,-1,axis=1)+np.roll(H,1,axis=1)+np.roll(np.roll(H,-1,axis=1),1,axis=0)+np.roll(np.roll(H,1,axis=1),1,axis=0)))
-
-        #preHw = np.roll(H,1,axis=1)
-        #preHw[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]=H[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]
-        #Hw = (H + preHw)/2
-        Hw = tools.jm_u(object,H)
-        #Hw = (1/3) *  (H+np.roll(H,1,axis=1)+0.25*(np.roll(H,-1,axis=0)+np.roll(H,1,axis=0)+np.roll(np.roll(H,-1,axis=0),1,axis=1)+np.roll(np.roll(H,1,axis=1),1,axis=0)))
-
-        Os = Hs/(object.dy**2)
-        Ow = Hw/(object.dx**2)
-
-        rolledOw = np.roll(Ow,-1,axis=1)
-        #rolledOw[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]=Ow[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=1))]
-
-        rolledOs = np.roll(Os,-1,axis=0)
-        #rolledOs[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]=Os[np.logical_and(object.tmask,~np.roll(object.tmask,1,axis=0))]
-
-        Osum = (Ow + rolledOw + Os + rolledOs)        #Osum = (ip_t(object,Ow)*2 + jp_t(object,Os)*2)
-        Osum[Osum!=0] = (1/Osum[Osum!=0])
+        Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
         object.Osum = Osum
+        #object.Osum[:] = Osum[50,50]
         object.Os = Os
         object.Ow = Ow
+
+    ##Osum=np.roll(Osum,1,axis=0)
+    #Osum=np.roll(Osum,1,axis=1)
+##
+    plt.suptitle("OSUM")
+    plt.imshow(object.Osum)
+    plt.show()
+    plt.suptitle("pi_rhs")
+    plt.imshow(pi_rhs)
+    plt.show()
+#
+
     print("conv: ", np.sum(np.abs(pi_rhs)))
     rp=0.66
-    #if object.pressure_solves >3:
-        #rp=1.9
-    pi_tol = 10**-10
+    if object.pressure_solves >3:
+        rp=1.5
+    pi_tol = 10**-21
     pi = object.RL[1]
     iters = 0
     pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
-    #plt.imshow(pi)
-    #plt.show()
+    plt.suptitle("pi")
+    plt.imshow(pi)
+    plt.show()
+
 
 
 #
@@ -389,13 +476,42 @@ def surface_pressure(object,delt):
     #plt.show()
 
     object.RL[1] = pi
+    #pi=pi*object.tmask
+    #plt.imshow(pi)
+    #object.U[2,:,:] = object.Ustar + delt*pressure_diff_u(object,pi,1,1)/(object.dx)*object.umask
+    #object.U2[2,:,:] = object.Ustar2 + delt*pressure_diff_u(object,pi,1,1)/(object.dx)*object.umask
+    #object.V[2,:,:] = object.Vstar + delt*pressure_diff_v(object,pi,0,1)/(object.dy)*object.vmask
+    #object.V2[2,:,:] = object.Vstar2 + delt*pressure_diff_v(object,pi,0,1)/(object.dy)*object.vmask
+    pi_x = delt*(np.roll(pi,1,axis=1)-pi)/(object.dx)
+    pi_x[np.roll(object.tmask,1,axis=1)!=object.tmask]=0
+    pi_y = delt*(np.roll(pi,1,axis=0)-pi)/(object.dy)
+    pi_y[np.roll(object.tmask,1,axis=0)!=object.tmask]=0
+    object.U[2,:,:] = (object.Ustar + pi_x)
+    object.U2[2,:,:] = (object.Ustar2 + pi_x)
+    object.V[2,:,:] = (object.Vstar + pi_y)
+    object.V2[2,:,:] = (object.Vstar2 + pi_y)
 
-    object.U[2,:,:] = object.Ustar + delt*np.roll(pi,1,axis=1)/(object.dx)*object.umask
-    object.U2[2,:,:] = object.Ustar2 + delt*np.roll(pi,1,axis=1)/(object.dx)*object.umask
-    object.V[2,:,:] = object.Vstar + delt*np.roll(pi,1,axis=0)/(object.dy)*object.vmask
-    object.V2[2,:,:] = object.Vstar2 + delt*np.roll(pi,1,axis=0)/(object.dy)*object.vmask
+    hu1 = object.U[2]*10#tools.im(object.D[1])
+    hv1 = object.V[2]*10#tools.jm(object.D[1])
+    hu2 = object.U2[2]*10#tools.im(object.D2[1])
+    hv2 = object.V2[2]*10#tools.jm(object.D2[1])
+
+    pi_rhs = np.zeros(hu1.shape)
+    pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
+    print("conv: ", np.sum(np.abs(pi_rhs)))
+    plt.imshow(pi_rhs)
+    plt.show()
+    plt.quiver(object.U[2],object.V[2])
+    plt.show()
+#
+    breakpoint()
+
     object.pressure_solves+=1
-    if (object.pressure_solves)%5 ==0 and False:
+    if (object.pressure_solves)%1 ==0:
+        fig, (ax1,ax2) = plt.subplots(1,2)
+        ax1.imshow(pi_x)
+        ax2.imshow(pi_y)
+        plt.show()
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
         X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
         im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
@@ -409,19 +525,18 @@ def surface_pressure(object,delt):
         im = ax4.pcolormesh(X,Y,object.D2[2]*object.tmask)
         ##ax4.quiver(object.U2[2],object.V2[2])
         plt.colorbar(im,ax=ax4)
-        im = ax5.pcolormesh(X,Y,object.U2[1]*object.umask)
+        im = ax5.pcolormesh(X,Y,object.U2[2]*object.umask)
         plt.colorbar(im,ax=ax5)
-        im = ax6.pcolormesh(X,Y,object.V2[1]*object.vmask)
+        im = ax6.pcolormesh(X,Y,object.V2[2]*object.vmask)
         plt.colorbar(im,ax=ax6)
 #
-        im = ax7.pcolormesh(X,Y,object.RL[1]*object.tmask)
+        im = ax7.pcolormesh(X,Y,object.RL[1])
         plt.colorbar(im,ax=ax7)
-        im = ax8.pcolormesh(X,Y,pi_rhs)
+        im = ax8.pcolormesh(X,Y,object.Ustar2)
         plt.colorbar(im,ax=ax8)
-        im = ax9.pcolormesh(X,Y,object.drho)
-        ##plt.colorbar(im,ax=ax9)
+        im = ax9.pcolormesh(X,Y,object.Vstar2)
+        plt.colorbar(im,ax=ax9)
         plt.show()
-        breakpoint()
 
     hu1 = object.Ustar*im_t(object,object.D[1])
     hv1 = object.Vstar*jm_t(object,object.D[1])
@@ -445,7 +560,7 @@ def surface_pressure(object,delt):
     print("totalvolume: ",np.sum(object.tmask*(object.D2[1]+object.D[1])))
     print("pressure sulves: ", object.pressure_solves)
 
-    plt.show()
+    #plt.show()
     
     
     

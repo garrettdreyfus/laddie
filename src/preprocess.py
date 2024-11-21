@@ -496,7 +496,8 @@ def init_from_scratch(object):
     #
     #object.zb[object.zb!=0] = 0
     #object.zb[:] = 0
-    #object.B[:]=object.zb-20
+
+    object.B[:]=object.zb-20
 
     object.H = object.zb-object.B
     object.B[object.H<10]=object.zb[object.H<10]-10
