@@ -166,7 +166,7 @@ def cut_domain(object):
     tmaskx = np.sum(tmask,axis=0)
     sargsx = np.argwhere(tmaskx>0)
     object.imin = np.maximum(0,sargsx[0][0]-1)
-    object.imax = np.minimum(object.nx_full-1,sargsx[-1][0]+1)
+    object.imax = np.minimum(object.nx_full-1,sargsx[-1][0]+1)-20
     tmasky = np.sum(tmask,axis=1)
     sargsy = np.argwhere(tmasky>0)
     object.jmin = np.maximum(0,sargsy[0][0]-1)

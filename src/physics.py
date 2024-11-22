@@ -377,10 +377,10 @@ def prepare_convergence(object):
 
 def prepare_laplacian(object):
 
-    object.D0ip = ip_t(object,object.D2[0,:,:])
-    object.D0im = im_t(object,object.D2[0,:,:])    
-    object.D0jp = jp_t(object,object.D2[0,:,:])
-    object.D0jm = jm_t(object,object.D2[0,:,:]) 
+    object.D0ip = ip_t(object,object.D[0,:,:])
+    object.D0im = im_t(object,object.D[0,:,:])    
+    object.D0jp = jp_t(object,object.D[0,:,:])
+    object.D0jm = jm_t(object,object.D[0,:,:]) 
 
     object.D20ip = ip_t(object,object.D2[0,:,:])
     object.D20im = im_t(object,object.D2[0,:,:])    

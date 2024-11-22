@@ -491,16 +491,16 @@ def init_from_scratch(object):
     update_ambientfields(object)
 
     #Initialise thickness D
-    object.umask[:,-20:]=0
+    #object.umask[:,-20:]=0
 
     #
     #object.zb[object.zb!=0] = 0
-    #object.zb[:] = 0
 
-    object.B[:]=object.zb-20
+#
+    #object.B[:]=object.zb-20
 
     object.H = object.zb-object.B
-    object.B[object.H<10]=object.zb[object.H<10]-10
+    object.B[object.H<20]=object.zb[object.H<20]-20
 
     object.H = object.zb-object.B
 
