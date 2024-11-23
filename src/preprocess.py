@@ -500,7 +500,7 @@ def init_from_scratch(object):
     #object.B[:]=object.zb-20
 
     object.H = object.zb-object.B
-    object.B[object.H<20]=object.zb[object.H<20]-20
+    object.B[object.H<25]=object.zb[object.H<25]-25
 
     object.H = object.zb-object.B
 

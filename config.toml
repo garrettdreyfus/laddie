@@ -1,12 +1,12 @@
 [Run]
-name = "test"   # Run name
+name = "NoDetr"   # Run name
 days = 20        # [days] run duration
 
 [Time]
 dt = 60        # [s] timestep
 restday = 1    # [days] interval to save restartfile
 #saveday = 1    # [days] interval to save model output
-saveday = 0.2315    # [days] interval to save model output
+saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
@@ -101,4 +101,7 @@ mindrho   = 0.005     # [kg/m^3]    Used for convop = 0 | Minimum density differ
 convtime  = 1000      # [s]         Used for convop = 2 | Restoring time scale towards ambient S and T where unstable
 
 [Output]
+
 #Choose variables to save
+save_Uu  = true
+save_Vu  = true

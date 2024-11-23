@@ -19,11 +19,8 @@ def integrate(object,nsteps=2):
 
 def prepare_integrate(object):
     """Compute reused fields in integration, after integrating D"""
-    object.D[0][object.D[0]>object.H]=object.H[object.D[0]>object.H]
-    object.D[1][object.D[1]>object.H]=object.H[object.D[1]>object.H]
-    object.D[2][object.D[2]>object.H]=object.H[object.D[2]>object.H]
     object.D2 = (object.H-object.D)*object.tmask
-    if (object.D2[1][object.tmask==1]==0).any():
+    if (object.D2[1][object.tmask==1]<=0).any():
         print("LAYER THICKNESS WENT TO ZERO")
         exit()
     object.dDdt = (object.D[2,:,:]-object.D[0,:,:]) / (2*object.dt)
@@ -552,6 +549,8 @@ def surface_pressure(object,delt):
         print("KE: ",np.sqrt(np.sum((object.umask*object.U[2])**2 + (object.vmask*object.V[2])**2)))
         print("D1: ",np.sum(object.D[1])/np.sum(object.tmask))
         print("D2: ",np.sum(object.D2[1])/np.sum(object.tmask))
+        print("D2min: ",np.min(object.D2[1][object.tmask==1]))
+        print("D2max: ",np.max(object.D2[1][object.tmask==1]))
         print("totalvolume: ",np.sum(object.tmask*(object.D2[1]+object.D[1])))
         print("pressure sulves: ", object.pressure_solves)
 

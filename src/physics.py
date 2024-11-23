@@ -296,9 +296,12 @@ def update_entrainment(object):
     object.convD = convT(object,object.D[1,:,:])
     object.convD2 = convT(object,object.D2[1,:,:])
     object.ent2 = np.maximum(0,(object.minD-object.D[0,:,:])/(2*object.dt)-(object.convD+object.melt+object.entr-object.detr)) *object.tmask
+    object.entD2 = np.minimum(0,((object.H-object.minD)-object.D[0,:,:])/(2*object.dt)-(object.convD+object.entr+object.melt-object.detr)) *object.tmask
+    #if (object.entD2!=0).any():
+        #print("TRYING")
 
     #Net entrainment
-    object.nentr = object.entr+object.ent2-object.detr
+    object.nentr = object.entr+object.ent2-object.detr+object.entD2
     return
 
 def prepare_convergence(object):
