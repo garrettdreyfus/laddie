@@ -162,11 +162,11 @@ def cut_domain(object):
     """Determine boundaries around ice shelf and shrink domain for computation"""
 
     #Get imin, imax, jmin, jmax
-    tmask = np.where(object.mask_full==3,1,0)
+    tmask = np.where(np.logical_or(object.mask_full==3,object.mask_full==0),1,0)
     tmaskx = np.sum(tmask,axis=0)
     sargsx = np.argwhere(tmaskx>0)
     object.imin = np.maximum(0,sargsx[0][0]-1)
-    object.imax = np.minimum(object.nx_full-1,sargsx[-1][0]+1)-20
+    object.imax = np.minimum(object.nx_full-1,sargsx[-1][0]+1)
     tmasky = np.sum(tmask,axis=1)
     sargsy = np.argwhere(tmasky>0)
     object.jmin = np.maximum(0,sargsy[0][0]-1)
@@ -231,7 +231,7 @@ def apply_coarsen(object,ds):
         ds['mask'] = xr.where(ds.mask==0,np.nan,ds.mask)
         ds['thickness'] = xr.where(np.isnan(ds.mask),np.nan,ds.thickness)
         ds['surface'] = xr.where(np.isnan(ds.mask),np.nan,ds.surface)
-        ds['bed'] = xr.where(np.isnan(ds.mask),np.nan,ds.bed)
+        #ds['bed'] = xr.where(np.isnan(ds.mask),np.nan,ds.bed)
         ds = ds.coarsen(x=object.coarsen,y=object.coarsen,boundary='trim').median()
         ds['mask'] = np.round(ds.mask)
         ds['mask'] = xr.where(np.isnan(ds.mask),0,ds.mask)

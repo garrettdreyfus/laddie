@@ -214,7 +214,7 @@ def create_mask(object):
     """Create masks and extract ice shelf front, grounding line, etc"""
 
     #Main masks
-    object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
+    object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
@@ -515,7 +515,11 @@ def init_from_scratch(object):
 
 
     object.D += object.Dinit*object.tmask
-    object.D2 += object.H*object.D
+    draftmin = np.max(object.zb[object.zb!=0])
+    object.D[0][object.zb==0]=draftmin
+    object.D[1][object.zb==0]=draftmin
+    object.D[2][object.zb==0]=draftmin
+    object.D2 += object.H-object.D
     #object.D[1][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[2][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[0][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]

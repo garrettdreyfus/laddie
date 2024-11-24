@@ -21,7 +21,7 @@ maskoption = "BM"                # Choice for mask definition, choose from 'BM',
 #geomyear = 0      			# Time index of geometry input
 #lonlat = true              # Include longitude latitude in output files
 #projection = "epsg:3031"   # Projection to use for computing longitude, latitude; only required if lonlat = true
-#coarsen = 1                # Factor to coarsen geometry. 1 uses clean input (no effect)
+coarsen = 2                # Factor to coarsen geometry. 1 uses clean input (no effect)
 calvthresh = 0            # [m] Thickness threshold for calving. 0 uses clean input (no effect)
 removebergs = true          # Remove icebergs
 correctisf = true          # Remove ice shelf grids sticking out

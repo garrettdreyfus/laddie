@@ -274,8 +274,8 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
                 absdiff = abs(pi_prev-pi[i,j])
                 if absdiff>maxdiff:
                     maxdiff=absdiff
-        #if iters%100000==0:
-            #print(maxdiff)
+        if iters%100000==0:
+            print(maxdiff)
         if maxdiff<pi_tol:
             print("SOR: ",iters)
             return pi
@@ -386,9 +386,9 @@ def surface_pressure(object,delt):
     #object.Vstar2[:] = 0
     #object.Ustar2[:] = (-Y/10)#object.D2[1]
 #
-    #object.Vstar[:] = (-Y/10)*object.vmask#object.D[1]
+    #object.Vstar[:] = -1#(-Y/10)*object.vmask#object.D[1]
     #object.Ustar[:] = 0
-    #object.Vstar2[:] = (-Y/10)*object.vmask#object.D2[1]
+    #object.Vstar2[:] = -1#(-Y/10)*object.vmask#object.D2[1]
     #object.Ustar2[:] = 0
     ##hu1 = object.Ustar*Dw#im_t(object,object.D[1])
     #hv1 = object.Vstar*Ds#jm_t(object,object.D[1])
@@ -433,6 +433,7 @@ def surface_pressure(object,delt):
 
     pi_rhs = np.zeros(hu1.shape)
     pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
+    breakpoint()
 
     if object.pressure_solves==0:
         Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
@@ -449,15 +450,12 @@ def surface_pressure(object,delt):
         plt.imshow(object.Osum)
         plt.show()
         plt.suptitle("pi_rhs")
-        #pi_rhs[object.tmask==0]=np.nan
-        plt.imshow(pi_rhs)
-        plt.show()
-    #
+
 
     beforeconv =  np.sum(np.abs(pi_rhs))
     rp=0.66
-    #if object.pressure_solves >3:
-        #rp=2.9
+    if object.pressure_solves >3:
+        rp=0.66
     pi_tol = 10**-19
     pi = object.RL[1]
     iters = 0
