@@ -5,6 +5,8 @@ import pdb
 import matplotlib.pyplot as plt
 from numba import njit
 import tools
+import pyamg
+from pyamg.krylov import bicgstab
 
 def integrate(object,nsteps=2):
     """Integration of N time steps. During normal integration, nsteps = 2 (now-centered Leapfrog scheme)"""
@@ -282,16 +284,53 @@ def SOR(pi,pi_rhs,Osum,Os,Ow,rp,pi_tol,Nx,Ny,tmask):
         iters+=1
 
 @njit
-def assemble_pi_rhs(pi_rhs,hu,hv,dx,dy,dt,umask,vmask):
+def assemble_pi_rhs(pi_rhs,hu,hv,dx,dy,dt,umask,vmask,tmask):
     for i in range(1,pi_rhs.shape[0]):
         for j in range(1,pi_rhs.shape[1]):
-            if vmask[i,j]!=0:
-                pi_rhs[i][j] = pi_rhs[i,j] + hv[i,j]/(dy*dt)
-                pi_rhs[i+1][j] = pi_rhs[i+1,j]- hv[i,j]/(dy*dt)
-            if umask[i,j]!=0:
-                pi_rhs[i][j] = pi_rhs[i,j] + hu[i,j]/(dx*dt)
-                pi_rhs[i][j+1] = pi_rhs[i,j+1] - hu[i,j]/(dx*dt)
+            if vmask[i,j]!=0 and tmask[i+1,j]!=0:
+                pi_rhs[i][j] = pi_rhs[i,j] - hv[i,j]/(dy*dt)
+                pi_rhs[i+1][j] = pi_rhs[i+1,j]+ hv[i,j]/(dy*dt)
+            if umask[i,j]!=0 and tmask[i,j+1]!=0:
+                pi_rhs[i][j] = pi_rhs[i,j] - hu[i,j]/(dx*dt)
+                pi_rhs[i][j+1] = pi_rhs[i,j+1] + hu[i,j]/(dx*dt)
     return pi_rhs
+
+@njit
+def assemble_mg_b(b,flatindexes,hu,hv,dx,dy,dt,umask,vmask,tmask):
+    Ny = hu.shape[0]
+    for i in range(0,hu.shape[0]):
+        for j in range(0,hu.shape[1]):
+            if vmask[i,j]!=0 and tmask[i+1,j]!=0:
+                b[flatindexes[i,j]] = b[flatindexes[i,j]] - hv[i,j]/(dy*dt)
+                b[flatindexes[i+1,j]] = b[flatindexes[i+1,j]]+ hv[i,j]/(dy*dt)
+            if umask[i,j]!=0 and tmask[i,j+1]!=0:
+                b[flatindexes[i,j]] = b[flatindexes[i,j]] - hu[i,j]/(dx*dt)
+                b[flatindexes[i,j+1]] = b[flatindexes[i,j+1]] + hu[i,j]/(dx*dt)
+    return b
+
+@njit
+def assemble_mg_A(A,H,flatindexes,tmask,dx,dy):
+    dx2q=dx**2
+    dy2q=dy**2
+    Ny = H.shape[0]
+    for i in range(1,H.shape[0]-1):
+        for j in range(1,H.shape[1]-1):
+            if tmask[i,j]:
+                if tmask[i,j+1]:
+                    A[flatindexes[i,j]][flatindexes[i,j+1]] = -( ((H[i,j+1]+H[i,j])/2.0)/dx2q)
+                    A[flatindexes[i,j]][flatindexes[i,j]] -= ( -((H[i,j+1]+H[i,j])/2.0)/dx2q)
+                if tmask[i,j-1]:
+                    A[flatindexes[i,j]][flatindexes[i,j-1]] = -((H[i,j-1]+H[i,j])/2.0)/dx2q
+                    A[flatindexes[i,j]][flatindexes[i,j]] += ((H[i,j-1]+H[i,j])/2.0)/dx2q
+                if tmask[i+1,j]:
+                    A[flatindexes[i,j]][flatindexes[i+1,j]] =-( ((H[i+1,j]+H[i,j])/2.0)/dy2q)
+                    A[flatindexes[i,j]][flatindexes[i,j]] -= ( -((H[i+1,j]+H[i,j])/2.0)/dy2q)
+                if tmask[i-1,j]:
+                    A[flatindexes[i,j]][flatindexes[i-1,j]] = -((H[i-1,j]+H[i,j])/2.0)/dy2q
+                    A[flatindexes[i,j]][flatindexes[i,j]] += ((H[i-1,j]+H[i,j])/2.0)/dy2q
+    return A
+
+
 #SOR_jit = jit(SOR)
 
 #def create_pi_rhs(pi_rhs,hu1,hv1,hu2,hv2,dx,dy,vmask,umask):
@@ -337,7 +376,7 @@ def assemble_Osum(H,tmask,dx,dy):
 
 
 
-def surface_pressure(object,delt):
+def surface_pressure(object,delt,method="mg"):
     #X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
     #X = (X-np.max(X)/2)/np.max(X)
     #Y = (Y-np.max(Y)/2)/np.max(Y)
@@ -431,16 +470,35 @@ def surface_pressure(object,delt):
 
 
 
-    pi_rhs = np.zeros(hu1.shape)
-    pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
-    breakpoint()
 
     if object.pressure_solves==0:
-        Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
-        object.Osum = Osum
-        #object.Osum[:] = Osum[50,50]
-        object.Os = Os
-        object.Ow = Ow
+        if method=="mg":
+            nonzero = np.where(object.tmask!=0)
+            object.flatindexes=np.ones(hu1.shape,dtype=int)*-999999999999
+            count=0
+            for i in range(len(nonzero[0])):
+                object.flatindexes[nonzero[0][i],nonzero[1][i]]=count
+                count+=1
+            A = np.zeros([count,count])
+            A = assemble_mg_A(A,object.H,object.flatindexes,object.tmask,object.dx,object.dy)
+#
+            B = np.ones((A.shape[0],1), dtype=A.dtype); BH = B.copy()
+#
+            ml = pyamg.smoothed_aggregation_solver(A, B=B, BH=BH, strength=('symmetric', {'theta': 0.0}), smooth=('energy', {'krylov': 'cg', 'maxiter': 2, 'degree': 1, 'weighting': 'local'}), improve_candidates=[('block_gauss_seidel', {'sweep': 'symmetric', 'iterations': 4}), None, None, None, None, None, None, None, None, None, None, None, None, None, None], aggregate="standard",\
+            presmoother=('block_gauss_seidel', {'sweep': 'symmetric', 'iterations': 1}), postsmoother=('block_gauss_seidel', {'sweep': 'symmetric', 'iterations': 1}),max_levels=15, max_coarse=300,coarse_solver="pinv")
+            object.A=A
+            breakpoint()
+            print("construct solver")
+            object.solver = ml
+            print("solver constructed")
+            object.xprev = B*0
+
+        else:
+            Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
+            object.Osum = Osum
+            #object.Osum[:] = Osum[50,50]
+            object.Os = Os
+            object.Ow = Ow
 
     ##Osum=np.roll(Osum,1,axis=0)
     #Osum=np.roll(Osum,1,axis=1)
@@ -452,14 +510,28 @@ def surface_pressure(object,delt):
         plt.suptitle("pi_rhs")
 
 
-    beforeconv =  np.sum(np.abs(pi_rhs))
-    rp=0.66
-    if object.pressure_solves >3:
+    #beforeconv =  np.sum(np.abs(pi_rhs))
+    if method=="mg":
+        b = np.zeros(object.A.shape[0])
+        b = assemble_mg_b(b,object.flatindexes,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask,object.tmask)
+        pi = object.RL[1]
+        x = object.solver.solve(b,x0=object.xprev,tol=1e-12,maxiter=100)
+        #print("residual: ",np.sum(np.abs(np.matmul(object.A,x)-b)))
+        object.xprev=x
+        for i in range(len(x)):
+            pi[object.flatindexes==i]=x[i]
+        #breakpoint()
+        #pi[object.flatindexes>=0]=x
+    else:
+        pi_rhs = np.zeros(hu1.shape)
+        pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
         rp=0.66
-    pi_tol = 10**-19
-    pi = object.RL[1]
-    iters = 0
-    pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
+        if object.pressure_solves >3:
+            rp=0.66
+        pi_tol = 10**-19
+        pi = object.RL[1]
+        iters = 0
+        pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
     #pi*0
 
     pi_x = -delt*(np.roll(pi,-1,axis=1)-pi)/(object.dx)*object.umask
@@ -495,13 +567,13 @@ def surface_pressure(object,delt):
     object.V[2,:,:] = (object.Vstar + pi_y)
     object.V2[2,:,:] = (object.Vstar2 + pi_y)
 
-    hu1 = object.U[2]*tools.ip_t(object,object.D[1])*object.umask
-    hv1 = object.V[2]*tools.jp_t(object,object.D[1])*object.vmask
-    hu2 = object.U2[2]*tools.ip_t(object,object.D2[1])*object.umask
-    hv2 = object.V2[2]*tools.jp_t(object,object.D2[1])*object.vmask
+    #hu1 = object.U[2]*tools.ip_t(object,object.D[1])*object.umask
+    #hv1 = object.V[2]*tools.jp_t(object,object.D[1])*object.vmask
+    #hu2 = object.U2[2]*tools.ip_t(object,object.D2[1])*object.umask
+    #hv2 = object.V2[2]*tools.jp_t(object,object.D2[1])*object.vmask
 
-    pi_rhs = np.zeros(hu1.shape)
-    pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
+    #pi_rhs = np.zeros(hu1.shape)
+    #pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask,object.tmask)
     if debug:
         plt.imshow(pi_rhs)
         plt.show()
@@ -542,8 +614,8 @@ def surface_pressure(object,delt):
 
     if (object.pressure_solves)%10 ==0 or object.pressure_solves<5:
         print("-----")
-        print("before conv", beforeconv)
-        print("after conv: ", np.sum(np.abs(pi_rhs)))
+        #print("before conv", beforeconv)
+        print("after conv: ", print("residual: ",np.sum(np.abs(np.matmul(object.A,x)-b))))
         print("KE: ",np.sqrt(np.sum((object.umask*object.U[2])**2 + (object.vmask*object.V[2])**2)))
         print("D1: ",np.sum(object.D[1])/np.sum(object.tmask))
         print("D2: ",np.sum(object.D2[1])/np.sum(object.tmask))

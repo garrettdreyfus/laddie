@@ -214,7 +214,8 @@ def create_mask(object):
     """Create masks and extract ice shelf front, grounding line, etc"""
 
     #Main masks
-    object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
+    #object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
+    object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean

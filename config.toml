@@ -18,6 +18,7 @@ projection = "epsg:3031"  # Projection to use for computing longitude, latitude
 coarsen = 1               # Factor to coarsen geometry
 calvthresh = 0            # [m] Thickness threshold for calving
 removebergs = true        # Remove icebergs
+cutdomain = true
 
 [Forcing]
 option = "linear" # Available options: 'file', 'tanh', 'linear', 'isomip', and 'linear2'

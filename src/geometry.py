@@ -162,7 +162,8 @@ def cut_domain(object):
     """Determine boundaries around ice shelf and shrink domain for computation"""
 
     #Get imin, imax, jmin, jmax
-    tmask = np.where(np.logical_or(object.mask_full==3,object.mask_full==0),1,0)
+    #tmask = np.where(np.logical_or(object.mask_full==3,object.mask_full==0),1,0)
+    tmask = np.where(object.mask_full==3,1,0)
     tmaskx = np.sum(tmask,axis=0)
     sargsx = np.argwhere(tmaskx>0)
     object.imin = np.maximum(0,sargsx[0][0]-1)
