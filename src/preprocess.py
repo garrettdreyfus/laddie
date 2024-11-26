@@ -419,6 +419,9 @@ def initialise_vars(object):
     
     #Remove positive values of ice shelf draft. Set shallowest ice shelf draft to 1 meters
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
+    object.H = object.zb-object.B
+    object.B[object.H<50]=object.zb[object.H<50]-50
+    object.H = object.zb-object.B
     #object.zb_full[object.zb_full>=-250]=-250
     #object.zb[object.zb>=-250]=-250
     #object.zb = object.zb*object.tmask
@@ -438,6 +441,7 @@ def initialise_vars(object):
     if object.fromrestart:
         
         object.print2log(f'Reading restart file: {object.restartfile}')
+
 
         try:
             #Initialise from restart
@@ -530,7 +534,24 @@ def init_from_scratch(object):
 
 
 
+
     object.D += object.Dinit*object.tmask
+
+    #object.TWterm = object.g*(object.zb-object.D[1,:,:])*(object.drho)
+    #object.U[0] = -(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
+    #object.V[0] = (np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
+    #object.U2[0] = (np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
+    #object.V2[0] = -(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
+
+    #object.U[1] = -(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
+    #object.V[1] = (np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
+    #object.U2[1] = (np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
+    #object.V2[1] = -(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
+
+    #object.U[2] = -(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
+    #object.V[2] = (np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
+    #object.U2[2] = (np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
+    #object.V2[2] = -(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
     #object.D[0] = 250+object.zb
     #object.D[0] = np.maximum(object.D[0],object.Dinit)
     #object.D[0] = np.minimum(object.D[0],object.H-object.minD)

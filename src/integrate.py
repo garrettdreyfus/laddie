@@ -501,7 +501,7 @@ def surface_pressure(object,delt,method="mg"):
     object.pressure_solves+=1
     if object.pressure_solves == 7500:
         breakpoint()
-    if (object.pressure_solves)%300 ==1 and True:# debug:
+    if (object.pressure_solves)%300 ==1 and debug:
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
         X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
         im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
@@ -529,7 +529,7 @@ def surface_pressure(object,delt,method="mg"):
         plt.show()
         breakpoint()
 
-    if (object.pressure_solves)%1 ==0 or object.pressure_solves<5:
+    if (object.pressure_solves)%50 ==0 or object.pressure_solves<5:
         print("-----")
         #print("before conv", beforeconv)
         print("after conv: ", print("residual: ",np.sum(np.abs(np.matmul(object.A,x)-b))))

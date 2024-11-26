@@ -10,7 +10,7 @@ saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
-filename = "./input/mitgcm.nc"  # File containing geometry input
+filename = "./input/mitgcm_allice.nc"  # File containing geometry input
 maskoption = "ISOMIP"                # Choice for mask definition, choose from 'BM', 'UFEMISM', 'IMAUICE', and 'ISOMIP'
 geomyear = false			# Time index of geometry input
 lonlat = false               # Include longitude latitude in output files
@@ -42,12 +42,13 @@ usegamtfix = true    #             Use fixed gamma_T rather than computing it
 results = "./output/"  # Main results directory in which rundirs are placed
 
 [Filenames]
-restartfile = ""#"./results/restart/CrossDots_0.5_tanh_Tdeep0.4_ztcl-500_001.nc"  # Restartfile
+#restartfile = ""#"./results/restart/CrossDots_0.5_tanh_Tdeep0.4_ztcl-500_001.nc"  # Restartfile
+restartfile = "output/ref_2024-11-26_noAv/restart_000005.nc"
 logfile = "log.txt" # Log file
 
 [Initialisation]
 Dinit = 10.0       # [m]         Initial uniform thickness D
-fromrestart = false    # Try starting from an existing restart file
+fromrestart = true    # Try starting from an existing restart file
 
 [Parameters]
 #External forcing
@@ -64,7 +65,7 @@ gamTfix   = 0.00018    # []          Turbulent exchange coefficient. If False: c
 Cd        = 2.5e-3    # []          drag coefficient
 Cdtop     = 1.1e-3    # []          Drag coefficient in Ustar
 Ah        = 6        # [m^2/s]     Laplacian viscosity
-Av        = 1
+Av        = 0
 Kh        = 1        # [m^2/s]     Diffusivity
 entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Holland' or 'Gaspar'
 mu        = 2.5       # []          Parameter in Gaspar entrainment. Gaspar: 0.5; Gladish: 2.5
