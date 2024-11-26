@@ -216,8 +216,8 @@ def create_mask(object):
 
     #Main masks
     #object.icemask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
-    object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
-    #object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
+    #object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
+    object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
     object.icemask = object.tmask
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
@@ -278,10 +278,10 @@ def create_mask(object):
     object.vmask = (object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
     #object.umask = object.tmask
     #object.vmask = object.tmask
-    object.umask[np.roll(object.tmask,-1,axis=1) - object.tmask !=0] = 0
-    object.vmask[np.roll(object.tmask,-1,axis=0) - object.tmask !=0] = 0 
-    object.umask[object.umask!=0]=1
-    object.vmask[object.vmask!=0]=1
+    #object.umask[np.roll(object.tmask,-1,axis=1) - object.tmask !=0] = 0
+    #object.vmask[np.roll(object.tmask,-1,axis=0) - object.tmask !=0] = 0 
+    #object.umask[object.umask!=0]=1
+    #object.vmask[object.vmask!=0]=1
 
     #object.umask = object.tmask#(object.tmask+object.isfW)*(1-np.roll(object.grlE,-1,axis=1))
     #object.vmask = object.tmask#(object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
@@ -419,9 +419,9 @@ def initialise_vars(object):
     
     #Remove positive values of ice shelf draft. Set shallowest ice shelf draft to 1 meters
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
-    object.zb_full[object.zb_full>=-250]=-250
-    object.zb[object.zb>=-250]=-250
-    object.zb = object.zb*object.tmask
+    #object.zb_full[object.zb_full>=-250]=-250
+    #object.zb[object.zb>=-250]=-250
+    #object.zb = object.zb*object.tmask
 
     #For rigid lid magic
     object.Ustar = np.zeros((object.ny+2,object.nx+2)).astype('float64')

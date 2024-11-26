@@ -64,6 +64,7 @@ gamTfix   = 0.00018    # []          Turbulent exchange coefficient. If False: c
 Cd        = 2.5e-3    # []          drag coefficient
 Cdtop     = 1.1e-3    # []          Drag coefficient in Ustar
 Ah        = 6        # [m^2/s]     Laplacian viscosity
+Av        = 1        # [m^2/s]     vertical viscosity
 Kh        = 1        # [m^2/s]     Diffusivity
 entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Holland' or 'Gaspar'
 mu        = 2.5       # []          Parameter in Gaspar entrainment. Gaspar: 0.5; Gladish: 2.5
