@@ -149,6 +149,7 @@ def read_config(object):
     object.Cd       = tryread(object,"Parameters","Cd",float,(0,1e20))
     object.Cdtop    = tryread(object,"Parameters","Cdtop",float,(0,1e20))
     object.Ah       = tryread(object,"Parameters","Ah",float,(0,1e20))
+    object.Av       = tryread(object,"Parameters","Av",float,(0,1e20),default=4)
     object.Kh       = tryread(object,"Parameters","Kh",float,(0,1e20))
     object.entpar   = tryread(object,"Parameters","entpar",str,['Holland','Gaspar'])
     if object.entpar == 'Gaspar':
@@ -214,8 +215,10 @@ def create_mask(object):
     """Create masks and extract ice shelf front, grounding line, etc"""
 
     #Main masks
-    #object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
-    object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
+    #object.icemask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
+    object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
+    #object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
+    object.icemask = object.tmask
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
@@ -270,9 +273,18 @@ def create_mask(object):
     object.grlS = object.grd*object.tmaskym1
     object.grl  = object.grlE+object.grlN+object.grlW+object.grlS
 
-    #Create masks for U- and V- velocities at N/E faces of grid points
+    ##Create masks for U- and V- velocities at N/E faces of grid points
     object.umask = (object.tmask+object.isfW)*(1-np.roll(object.grlE,-1,axis=1))
     object.vmask = (object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
+    #object.umask = object.tmask
+    #object.vmask = object.tmask
+    object.umask[np.roll(object.tmask,-1,axis=1) - object.tmask !=0] = 0
+    object.vmask[np.roll(object.tmask,-1,axis=0) - object.tmask !=0] = 0 
+    object.umask[object.umask!=0]=1
+    object.vmask[object.vmask!=0]=1
+
+    #object.umask = object.tmask#(object.tmask+object.isfW)*(1-np.roll(object.grlE,-1,axis=1))
+    #object.vmask = object.tmask#(object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
 
     #Rolled u- and v- masks
     object.umaskym1    = np.roll(object.umask,-1,axis=0)
@@ -407,6 +419,9 @@ def initialise_vars(object):
     
     #Remove positive values of ice shelf draft. Set shallowest ice shelf draft to 1 meters
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
+    object.zb_full[object.zb_full>=-250]=-250
+    object.zb[object.zb>=-250]=-250
+    object.zb = object.zb*object.tmask
 
     #For rigid lid magic
     object.Ustar = np.zeros((object.ny+2,object.nx+2)).astype('float64')
@@ -501,7 +516,7 @@ def init_from_scratch(object):
     #object.B[:]=object.zb-20
 
     object.H = object.zb-object.B
-    object.B[object.H<25]=object.zb[object.H<25]-25
+    object.B[object.H<50]=object.zb[object.H<50]-50
 
     object.H = object.zb-object.B
 
@@ -516,10 +531,17 @@ def init_from_scratch(object):
 
 
     object.D += object.Dinit*object.tmask
-    draftmin = np.max(object.zb[object.zb!=0])
-    object.D[0][object.zb==0]=draftmin
-    object.D[1][object.zb==0]=draftmin
-    object.D[2][object.zb==0]=draftmin
+    #object.D[0] = 250+object.zb
+    #object.D[0] = np.maximum(object.D[0],object.Dinit)
+    #object.D[0] = np.minimum(object.D[0],object.H-object.minD)
+    #object.D[1] = 250+object.zb
+    #object.D[1] = np.maximum(object.D[1],object.Dinit)
+    #object.D[1] = np.minimum(object.D[0],object.H-object.minD)
+    #object.D[2] = 250+object.zb
+    #object.D[2] = np.maximum(object.D[2],object.Dinit)
+    #object.D[2] = np.minimum(object.D[0],object.H-object.minD)
+
+
     object.D2 += object.H-object.D
     #object.D[1][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[2][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]

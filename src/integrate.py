@@ -93,85 +93,6 @@ def intD(object,delt):
                     +  object.nentr \
                     ) * object.tmask * delt    
 
-
-# def intU(object,delt):
-#     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-#     object.U[2,:,:] = object.U[0,:,:] \
-#                     + div0((-object.U[1,:,:] * ip_t(object,object.dDdt) \
-#                     +  convU(object) \
-#                     #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-
-#                     ## PRESSURE TERMS
-#                     ### --------------------
-#                     -  .5*object.g*ip_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-#                     + ip_t(object,object.D[1,:,:])*(np.roll(object.RL,-1,axis=1)-object.RL)/(object.dx*object.rho0) \
-#                     ### --------------------
-
-#                     +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
-#                     +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
-#                     +  object.Ah*lapU(object) \
-#                     +  -object.detr* object.U[1,:,:] \
-#                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
-
-# def intV(object,delt):
-#     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-#     object.V[2,:,:] = object.V[0,:,:] \
-#                     +div0((-object.V[1,:,:] * jp_t(object,object.dDdt) \
-#                     + convV(object) \
-#                     #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-#                     #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-#                     #PRESSURE TERMS
-#                     #-------------------------
-#                     - .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-#                     + jp_t(object,object.D[1,:,:])*(np.roll(object.RL,-1,axis=0)-object.RL)/(object.dy*object.rho0) \
-#                     #-------------------------
-
-#                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
-#                     + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
-#                     + object.Ah*lapV(object) \
-#                     +  -object.detr* object.V[1,:,:] \
-#                     ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
-
-# def intU2(object,delt):
-#     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-#     object.U2[2,:,:] = object.U2[0,:,:] \
-#                     + div0((-object.U2[1,:,:] * ip_t(object,object.dD2dt) \
-#                     +  convU2(object) \
-#                     #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-
-#                     ## PRESSURE TERMS
-#                     ### --------------------
-#                     #-  .5*object.g*ip_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D2[1,:,:]))*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
-#                     + ip_t(object,object.D2[1,:,:])*(np.roll(object.RL,-1,axis=1)-object.RL)/(object.dx*object.rho0) \
-#                     - ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.rho0)\
-#                     ### --------------------
-
-#                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
-#                     +  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
-#                     +  object.Ah*lapU2(object) \
-#                     +  -object.detr* object.U2[1,:,:] \
-#                     ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
-
-# def intV2(object,delt):
-#     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-#     object.V2[2,:,:] = object.V2[0,:,:] \
-#                     +div0((-object.V2[1,:,:] * jp_t(object,object.dD2dt) \
-#                     + convV2(object) \
-#                     #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-#                     #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-#                     #PRESSURE TERMS
-#                     #-------------------------
-#                     #- .5*object.g*jp_t(object,object.D2[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-#                     + jp_t(object,object.D2[1,:,:])*(np.roll(object.RL,-1,axis=0)-object.RL)/(object.dy*object.rho0) \
-#                     - jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.rho0)\
-#                     #-------------------------
-
-#                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
-#                     + -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
-#                     + object.Ah*lapV2(object) \
-#                     +  -object.detr* object.V2[1,:,:] \
-#                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
-
 def generate_stars(object,delt):
     #hello
     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
@@ -188,6 +109,7 @@ def generate_stars(object,delt):
 
                     +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
                     +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
+                    +  -object.Av* div0((object.U[1,:,:]-object.U2[1,:,:]),(object.D[1]/2.0+object.D2[1]/2.0)) \
                     +  object.Ah*lapU(object) \
                     +  -0*object.detr* object.U[1,:,:] \
                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
@@ -208,6 +130,7 @@ def generate_stars(object,delt):
 
                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
                     + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
+                    + -object.Av* div0((object.V[1,:,:]-object.V2[1,:,:]),(object.D[1]/2.0+object.D2[1]/2.0)) \
                     + object.Ah*lapV(object) \
                     +  -0*object.detr* object.V[1,:,:] \
                     ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
@@ -227,6 +150,7 @@ def generate_stars(object,delt):
                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
                     +  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
                     +  object.Ah*lapU2(object) \
+                    + -object.Av* div0((object.U2[1,:,:]-object.U[1,:,:]),(object.D[1]/2.0+object.D2[1]/2.0)) \
                     -  -0*object.detr* object.U2[1,:,:] \
                     ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
@@ -244,6 +168,7 @@ def generate_stars(object,delt):
                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
                     + -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
                     + object.Ah*lapV2(object) \
+                    + -object.Av* div0((object.V2[1,:,:]-object.V[1,:,:]),(object.D[1]/2.0+object.D2[1]/2.0)) \
                     -  -0*object.detr* object.V2[1,:,:] \
                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
 
@@ -300,10 +225,10 @@ def assemble_mg_b(b,flatindexes,hu,hv,dx,dy,dt,umask,vmask,tmask):
     Ny = hu.shape[0]
     for i in range(0,hu.shape[0]):
         for j in range(0,hu.shape[1]):
-            if vmask[i,j]!=0 and tmask[i+1,j]!=0:
+            if vmask[i,j]!=0 and tmask[i+1,j]!=0 and tmask[i,j]!=0:
                 b[flatindexes[i,j]] = b[flatindexes[i,j]] - hv[i,j]/(dy*dt)
                 b[flatindexes[i+1,j]] = b[flatindexes[i+1,j]]+ hv[i,j]/(dy*dt)
-            if umask[i,j]!=0 and tmask[i,j+1]!=0:
+            if umask[i,j]!=0 and tmask[i,j+1]!=0 and tmask[i,j]!=0:
                 b[flatindexes[i,j]] = b[flatindexes[i,j]] - hu[i,j]/(dx*dt)
                 b[flatindexes[i,j+1]] = b[flatindexes[i,j+1]] + hu[i,j]/(dx*dt)
     return b
@@ -464,7 +389,6 @@ def surface_pressure(object,delt,method="mg"):
         plt.colorbar(im,ax=ax3)
         im = ax4.imshow(object.Vstar2)
         plt.colorbar(im,ax=ax4)
-        breakpoint()
         plt.show()
 
 
@@ -487,11 +411,11 @@ def surface_pressure(object,delt,method="mg"):
             ml = pyamg.smoothed_aggregation_solver(A, B=B, BH=BH, strength=('symmetric', {'theta': 0.0}), smooth=('energy', {'krylov': 'cg', 'maxiter': 2, 'degree': 1, 'weighting': 'local'}), improve_candidates=[('block_gauss_seidel', {'sweep': 'symmetric', 'iterations': 4}), None, None, None, None, None, None, None, None, None, None, None, None, None, None], aggregate="standard",\
             presmoother=('block_gauss_seidel', {'sweep': 'symmetric', 'iterations': 1}), postsmoother=('block_gauss_seidel', {'sweep': 'symmetric', 'iterations': 1}),max_levels=15, max_coarse=300,coarse_solver="pinv")
             object.A=A
-            breakpoint()
             print("construct solver")
             object.solver = ml
             print("solver constructed")
             object.xprev = B*0
+            breakpoint()
 
         else:
             Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
@@ -502,12 +426,7 @@ def surface_pressure(object,delt,method="mg"):
 
     ##Osum=np.roll(Osum,1,axis=0)
     #Osum=np.roll(Osum,1,axis=1)
-##
-    if debug:
-        plt.suptitle("OSUM")
-        plt.imshow(object.Osum)
-        plt.show()
-        plt.suptitle("pi_rhs")
+#)
 
 
     #beforeconv =  np.sum(np.abs(pi_rhs))
@@ -546,15 +465,6 @@ def surface_pressure(object,delt,method="mg"):
         ax1.imshow(pi)
         plt.show()
 
-
-
-#
-    #fig,(ax1,ax2) = plt.subplots(1,2)
-    #pi_rhs[H==0] = np.nan
-    #ax1.imshow(Osum)
-    #ax2.imshow(H)
-    #plt.show()
-
     object.RL[1] = pi
     #pi=pi*object.tmask
     #plt.imshow(pi)
@@ -562,10 +472,10 @@ def surface_pressure(object,delt,method="mg"):
     #object.U2[2,:,:] = object.Ustar2 + delt*pressure_diff_u(object,pi,1,1)/(object.dx)*object.umask
     #object.V[2,:,:] = object.Vstar + delt*pressure_diff_v(object,pi,0,1)/(object.dy)*object.vmask
     #object.V2[2,:,:] = object.Vstar2 + delt*pressure_diff_v(object,pi,0,1)/(object.dy)*object.vmask
-    object.U[2,:,:] = (object.Ustar + pi_x)
-    object.U2[2,:,:] = (object.Ustar2 + pi_x)
-    object.V[2,:,:] = (object.Vstar + pi_y)
-    object.V2[2,:,:] = (object.Vstar2 + pi_y)
+    object.U[2,:,:] = (object.Ustar + pi_x)*object.umask
+    object.U2[2,:,:] = (object.Ustar2 + pi_x)*object.umask
+    object.V[2,:,:] = (object.Vstar + pi_y)*object.vmask
+    object.V2[2,:,:] = (object.Vstar2 + pi_y)*object.vmask
 
     #hu1 = object.U[2]*tools.ip_t(object,object.D[1])*object.umask
     #hv1 = object.V[2]*tools.jp_t(object,object.D[1])*object.vmask
@@ -575,7 +485,11 @@ def surface_pressure(object,delt,method="mg"):
     #pi_rhs = np.zeros(hu1.shape)
     #pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask,object.tmask)
     if debug:
-        plt.imshow(pi_rhs)
+        plt.imshow(pi)
+        plt.show()
+        plt.quiver(object.Ustar,object.Vstar)
+        plt.show()
+        plt.quiver(object.Ustar2,object.Vstar2)
         plt.show()
         plt.quiver(object.U[2],object.V[2])
         plt.show()
@@ -585,7 +499,9 @@ def surface_pressure(object,delt,method="mg"):
     #breakpoint()
 
     object.pressure_solves+=1
-    if (object.pressure_solves)%1000000000 ==0 or debug:
+    if object.pressure_solves == 7500:
+        breakpoint()
+    if (object.pressure_solves)%100 ==1 and debug:
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
         X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
         im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
@@ -611,8 +527,9 @@ def surface_pressure(object,delt,method="mg"):
         im = ax9.pcolormesh(X,Y,object.Vstar2)
         plt.colorbar(im,ax=ax9)
         plt.show()
+        breakpoint()
 
-    if (object.pressure_solves)%10 ==0 or object.pressure_solves<5:
+    if (object.pressure_solves)%250 ==0 or object.pressure_solves<5:
         print("-----")
         #print("before conv", beforeconv)
         print("after conv: ", print("residual: ",np.sum(np.abs(np.matmul(object.A,x)-b))))

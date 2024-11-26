@@ -248,7 +248,7 @@ def update_melt(object):
     """Routine to compute melt rate based on three equations (Jenkins)"""
 
     #Friction velocity
-    object.ustar = (object.Cdtop*(im(object.U[1,:,:])**2+jm(object.V[1,:,:])**2+object.utide**2))**.5 * object.tmask
+    object.ustar = (object.Cdtop*(im(object.U[1,:,:])**2+jm(object.V[1,:,:])**2+object.utide**2))**.5 * object.icemask
     
     #Gamma_T and Gamma_S
     if object.usegamtfix:
@@ -268,10 +268,10 @@ def update_melt(object):
     c = Chat*object.gamT*object.gamS*(That-object.T[1,:,:]+object.l1*object.S[1,:,:])
 
     #Melt rate
-    object.melt = .5*(-b+np.sqrt(b**2-4*c)) * object.tmask
+    object.melt = .5*(-b+np.sqrt(b**2-4*c)) * object.icemask
 
     #Temperature at ice shelf base
-    object.Tb = div0(Chat*object.gamT*object.T[1,:,:]-object.melt,Chat*object.gamT+Chat*Ctil*object.melt) * object.tmask
+    object.Tb = div0(Chat*object.gamT*object.T[1,:,:]-object.melt,Chat*object.gamT+Chat*Ctil*object.melt) * object.icemask
 
     return
 
