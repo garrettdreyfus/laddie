@@ -110,7 +110,7 @@ def generate_stars(object,delt):
                     +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
                     +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
                     +  -object.Av* div0((object.U[1,:,:]-object.U2[1,:,:]),ip_t(object,object.H/2.0)) \
-                    +  object.Ah*lapU(object) \
+                    +  object.Ah*lapU(object)*object.smask \
                     +  -0*object.detr* object.U[1,:,:] \
                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
 
@@ -131,7 +131,7 @@ def generate_stars(object,delt):
                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
                     + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
                     + -object.Av* div0((object.V[1,:,:]-object.V2[1,:,:]),jp_t(object,object.H/2.0)) \
-                    + object.Ah*lapV(object) \
+                    + object.Ah*lapV(object)*object.smask \
                     +  -0*object.detr* object.V[1,:,:] \
                     ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
 
@@ -149,7 +149,7 @@ def generate_stars(object,delt):
 
                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
                     +  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
-                    +  object.Ah*lapU2(object) \
+                    +  object.Ah*lapU2(object)*object.smask \
                     + -object.Av* div0((object.U2[1,:,:]-object.U[1,:,:]),ip_t(object,object.H/2.0)) \
                     -  -0*object.detr* object.U2[1,:,:] \
                     ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
@@ -167,7 +167,7 @@ def generate_stars(object,delt):
 
                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
                     + -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
-                    + object.Ah*lapV2(object) \
+                    + object.Ah*lapV2(object)*object.smask \
                     + -object.Av* div0((object.V2[1,:,:]-object.V[1,:,:]),jp_t(object,object.H/2.0)) \
                     -  -0*object.detr* object.V2[1,:,:] \
                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
@@ -369,7 +369,7 @@ def surface_pressure(object,delt,method="mg"):
     debug = False
 #
 
-    if (object.pressure_solves)%5==0 and True and debug:
+    if (object.pressure_solves)%1==0 and True and debug:
 
         #termu = - object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/(object.dx)
         #termu[object.umask==0]=np.nan
@@ -390,6 +390,7 @@ def surface_pressure(object,delt,method="mg"):
         im = ax4.imshow(object.Vstar2)
         plt.colorbar(im,ax=ax4)
         plt.show()
+        breakpoint()
 
 
 
@@ -484,7 +485,7 @@ def surface_pressure(object,delt,method="mg"):
 
     #pi_rhs = np.zeros(hu1.shape)
     #pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask,object.tmask)
-    if debug:
+    if debug and False:
         plt.imshow(pi)
         plt.show()
         plt.quiver(object.Ustar,object.Vstar)
@@ -499,9 +500,7 @@ def surface_pressure(object,delt,method="mg"):
     #breakpoint()
 
     object.pressure_solves+=1
-    if object.pressure_solves == 7500:
-        breakpoint()
-    if (object.pressure_solves)%300 ==1 and debug:
+    if (object.pressure_solves)%10 ==1 and debug:
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
         X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
         im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
@@ -544,10 +543,6 @@ def surface_pressure(object,delt,method="mg"):
 
     #plt.show()
     
-    
-    
-
-
     object.RL[1]=pi
 
 

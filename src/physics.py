@@ -1,3 +1,4 @@
+
 import numpy as np
 from tools import *
 
@@ -22,10 +23,10 @@ def lapU2(object):
     AA = object.slip*Dcent*var/object.dy**2
 
     #Operator at all four sides
-    tN = jp_t(object,Dcent)                 * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-object.ocnym1) - AA*object.grdNu
-    tS = jm_t(object,Dcent)                 * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-object.ocnyp1) - AA*object.grdSu  
-    tE = np.roll(object.D2[0,:,:],-1,axis=1) * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-object.ocnxm1)
-    tW = object.D2[0,:,:]                    * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-object.ocn   )
+    tN = jp_t(object,Dcent)                 * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocnym1) - AA*object.grdNu
+    tS = jm_t(object,Dcent)                 * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocnyp1) - AA*object.grdSu  
+    tE = np.roll(object.D2[0,:,:],-1,axis=1) * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocnxm1)
+    tW = object.D2[0,:,:]                    * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocn   )
     
     return tN+tS+tE+tW
 
@@ -38,10 +39,10 @@ def lapV2(object):
     AA = object.slip*Dcent*var/object.dx**2
     
     #Operator on all four sides
-    tN = np.roll(object.D2[0,:,:],-1,axis=0) * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-object.ocnym1) 
-    tS = object.D2[0,:,:]                    * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-object.ocn   )
-    tE = ip_t(object,Dcent)                 * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-object.ocnxm1) - AA*object.grdEv
-    tW = im_t(object,Dcent)                 * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-object.ocnxp1) - AA*object.grdWv  
+    tN = np.roll(object.D2[0,:,:],-1,axis=0) * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocnym1) 
+    tS = object.D2[0,:,:]                    * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocn   )
+    tE = ip_t(object,Dcent)                 * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocnxm1) - AA*object.grdEv
+    tW = im_t(object,Dcent)                 * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocnxp1) - AA*object.grdWv  
     
     return tN+tS+tE+tW
 
@@ -55,10 +56,10 @@ def lapU(object):
     AA = object.slip*Dcent*var/object.dy**2
 
     #Operator at all four sides
-    tN = jp_t(object,Dcent)                 * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-object.ocnym1) - AA*object.grdNu
-    tS = jm_t(object,Dcent)                 * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-object.ocnyp1) - AA*object.grdSu  
-    tE = np.roll(object.D[0,:,:],-1,axis=1) * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-object.ocnxm1)
-    tW = object.D[0,:,:]                    * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-object.ocn   )
+    tN = jp_t(object,Dcent)                 * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocnym1) - AA*object.grdNu
+    tS = jm_t(object,Dcent)                 * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocnyp1) - AA*object.grdSu  
+    tE = np.roll(object.D[0,:,:],-1,axis=1) * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocnxm1)
+    tW = object.D[0,:,:]                    * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocn   )
     
     return tN+tS+tE+tW
 
@@ -71,10 +72,10 @@ def lapV(object):
     AA = object.slip*Dcent*var/object.dx**2
     
     #Operator on all four sides
-    tN = np.roll(object.D[0,:,:],-1,axis=0) * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-object.ocnym1) 
-    tS = object.D[0,:,:]                    * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-object.ocn   )
-    tE = ip_t(object,Dcent)                 * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-object.ocnxm1) - AA*object.grdEv
-    tW = im_t(object,Dcent)                 * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-object.ocnxp1) - AA*object.grdWv  
+    tN = np.roll(object.D[0,:,:],-1,axis=0) * (np.roll(var,-1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocnym1) 
+    tS = object.D[0,:,:]                    * (np.roll(var, 1,axis=0)-var)/object.dy**2 * (1-0*0*0*object.ocn   )
+    tE = ip_t(object,Dcent)                 * (np.roll(var,-1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocnxm1) - AA*object.grdEv
+    tW = im_t(object,Dcent)                 * (np.roll(var, 1,axis=1)-var)/object.dx**2 * (1-0*0*0*object.ocnxp1) - AA*object.grdWv  
     
     return tN+tS+tE+tW
 
@@ -83,10 +84,10 @@ def convT(object,var):
     
     if object.boundop ==1:
         #Option 1: assume inflow from open ocean to cavity is determined by zero gradient in D, T, and S
-        tN = - (object.Vpos*var                          + object.Vneg*(np.roll(var,-1,axis=0)*object.tmaskym1+var*object.ocnym1)) / object.dy * object.vmask
-        tS =   (object.Vyp1pos*(np.roll(var,1,axis=0)*object.tmaskyp1+var*object.ocnyp1) + object.Vyp1neg *var                   ) / object.dy * object.vmaskyp1
-        tE = - (object.Upos*var                          + object.Uneg*(np.roll(var,-1,axis=1)*object.tmaskxm1+var*object.ocnxm1)) / object.dx * object.umask
-        tW =   (object.Uxp1pos*(np.roll(var,1,axis=1)*object.tmaskxp1+var*object.ocnxp1) + object.Uxp1neg *var                   ) / object.dx * object.umaskxp1
+        tN = - (object.Vpos*var                          + object.Vneg*(np.roll(var,-1,axis=0)*object.tmaskym1+var*0*0*0*object.ocnym1)) / object.dy * object.vmask
+        tS =   (object.Vyp1pos*(np.roll(var,1,axis=0)*object.tmaskyp1+var*0*0*0*object.ocnyp1) + object.Vyp1neg *var                   ) / object.dy * object.vmaskyp1
+        tE = - (object.Upos*var                          + object.Uneg*(np.roll(var,-1,axis=1)*object.tmaskxm1+var*0*0*0*object.ocnxm1)) / object.dx * object.umask
+        tW =   (object.Uxp1pos*(np.roll(var,1,axis=1)*object.tmaskxp1+var*0*0*0*object.ocnxp1) + object.Uxp1neg *var                   ) / object.dx * object.umaskxp1
     elif object.boundop ==2:
         #Opion 2: assume zero inflow from open ocean to cavity
         tN = - (object.Vpos*var                      + object.Vneg   *np.roll(var,-1,axis=0)) / object.dy * object.vmask
@@ -102,13 +103,13 @@ def convU2(object):
     #Get D at north, south, east, west points of U-grid
     DN = div0((object.D2[1,:,:] + object.D2xm1 + object.D2ym1 + object.D2xm1ym1),(object.tmask + object.tmaskxm1 + object.tmaskym1 + object.tmaskxm1ym1))
     DS = div0((object.D2[1,:,:] + object.D2xm1 + object.D2yp1 + object.D2xm1yp1),(object.tmask + object.tmaskxm1 + object.tmaskyp1 + object.tmaskxm1yp1))
-    DE = object.D2xm1     + object.ocnxm1 * object.D2[1,:,:]
-    DW = object.D2[1,:,:] + object.ocn    * object.D2xm1
+    DE = object.D2xm1     + 0*0*0*object.ocnxm1 * object.D2[1,:,:]
+    DW = object.D2[1,:,:] + 0*0*0*object.ocn    * object.D2xm1
     
     tN = -DN *        object.V2ip           *(object.U2jp -    object.slip  * object.U2[1,:,:] * object.grdNu ) /object.dy
     tS =  DS *np.roll(object.V2ip,1,axis=0) *(object.U2jm -    object.slip  * object.U2[1,:,:] * object.grdSu ) /object.dy
-    tE = -DE *        object.U2ip           *(object.U2ip - (1-object.signU2)* object.U2[1,:,:] * object.ocnxm1) /object.dx
-    tW =  DW *        object.U2im           *(object.U2im -    object.signU2 * object.U2[1,:,:] * object.ocn   ) /object.dx
+    tE = -DE *        object.U2ip           *(object.U2ip - (1-object.signU2)* object.U2[1,:,:] * 0*0*0*object.ocnxm1) /object.dx
+    tW =  DW *        object.U2im           *(object.U2im -    object.signU2 * object.U2[1,:,:] * 0*0*0*object.ocn   ) /object.dx
     
     return tN+tS+tE+tW
 
@@ -118,11 +119,11 @@ def convV2(object):
     #Get D at north, south, east, west points of V-grid
     DE = div0((object.D2[1,:,:] + object.D2ym1 + object.D2xm1 + object.D2xm1ym1),(object.tmask + object.tmaskym1 + object.tmaskxm1 + object.tmaskxm1ym1))
     DW = div0((object.D2[1,:,:] + object.D2ym1 + object.D2xp1 + object.D2xp1ym1),(object.tmask + object.tmaskym1 + object.tmaskxp1 + object.tmaskxp1ym1))
-    DN = object.D2ym1     + object.ocnym1 * object.D2[1,:,:]
-    DS = object.D2[1,:,:] + object.ocn    * object.D2ym1 
+    DN = object.D2ym1     + 0*0*0*object.ocnym1 * object.D2[1,:,:]
+    DS = object.D2[1,:,:] + 0*0*0*object.ocn    * object.D2ym1 
     
-    tN = -DN *        object.V2jp           *(object.V2jp - (1-object.signV2)* object.V2[1,:,:] * object.ocnym1) /object.dy
-    tS =  DS *        object.V2jm           *(object.V2jm -    object.signV2 * object.V2[1,:,:] * object.ocn   ) /object.dy
+    tN = -DN *        object.V2jp           *(object.V2jp - (1-object.signV2)* object.V2[1,:,:] * 0*0*0*object.ocnym1) /object.dy
+    tS =  DS *        object.V2jm           *(object.V2jm -    object.signV2 * object.V2[1,:,:] * 0*0*0*object.ocn   ) /object.dy
     tE = -DE *        object.U2jp           *(object.V2ip -    object.slip  * object.V2[1,:,:] * object.grdEv ) /object.dx
     tW =  DW *np.roll(object.U2jp,1,axis=1) *(object.V2im -    object.slip  * object.V2[1,:,:] * object.grdWv ) /object.dx
     
@@ -135,13 +136,13 @@ def convU(object):
     #Get D at north, south, east, west points of U-grid
     DN = div0((object.D[1,:,:] + object.Dxm1 + object.Dym1 + object.Dxm1ym1),(object.tmask + object.tmaskxm1 + object.tmaskym1 + object.tmaskxm1ym1))
     DS = div0((object.D[1,:,:] + object.Dxm1 + object.Dyp1 + object.Dxm1yp1),(object.tmask + object.tmaskxm1 + object.tmaskyp1 + object.tmaskxm1yp1))
-    DE = object.Dxm1     + object.ocnxm1 * object.D[1,:,:]
-    DW = object.D[1,:,:] + object.ocn    * object.Dxm1
+    DE = object.Dxm1     + 0*0*0*object.ocnxm1 * object.D[1,:,:]
+    DW = object.D[1,:,:] + 0*0*0*object.ocn    * object.Dxm1
     
     tN = -DN *        object.Vip           *(object.Ujp -    object.slip  * object.U[1,:,:] * object.grdNu ) /object.dy
     tS =  DS *np.roll(object.Vip,1,axis=0) *(object.Ujm -    object.slip  * object.U[1,:,:] * object.grdSu ) /object.dy
-    tE = -DE *        object.Uip           *(object.Uip - (1-object.signU)* object.U[1,:,:] * object.ocnxm1) /object.dx
-    tW =  DW *        object.Uim           *(object.Uim -    object.signU * object.U[1,:,:] * object.ocn   ) /object.dx
+    tE = -DE *        object.Uip           *(object.Uip - (1-object.signU)* object.U[1,:,:] * 0*0*0*object.ocnxm1) /object.dx
+    tW =  DW *        object.Uim           *(object.Uim -    object.signU * object.U[1,:,:] * 0*0*0*object.ocn   ) /object.dx
     
     return tN+tS+tE+tW
 
@@ -151,11 +152,11 @@ def convV(object):
     #Get D at north, south, east, west points of V-grid
     DE = div0((object.D[1,:,:] + object.Dym1 + object.Dxm1 + object.Dxm1ym1),(object.tmask + object.tmaskym1 + object.tmaskxm1 + object.tmaskxm1ym1))
     DW = div0((object.D[1,:,:] + object.Dym1 + object.Dxp1 + object.Dxp1ym1),(object.tmask + object.tmaskym1 + object.tmaskxp1 + object.tmaskxp1ym1))
-    DN = object.Dym1     + object.ocnym1 * object.D[1,:,:]
-    DS = object.D[1,:,:] + object.ocn    * object.Dym1 
+    DN = object.Dym1     + 0*0*0*object.ocnym1 * object.D[1,:,:]
+    DS = object.D[1,:,:] + 0*0*0*object.ocn    * object.Dym1 
     
-    tN = -DN *        object.Vjp           *(object.Vjp - (1-object.signV)* object.V[1,:,:] * object.ocnym1) /object.dy
-    tS =  DS *        object.Vjm           *(object.Vjm -    object.signV * object.V[1,:,:] * object.ocn   ) /object.dy
+    tN = -DN *        object.Vjp           *(object.Vjp - (1-object.signV)* object.V[1,:,:] * 0*0*0*object.ocnym1) /object.dy
+    tS =  DS *        object.Vjm           *(object.Vjm -    object.signV * object.V[1,:,:] * 0*0*0*object.ocn   ) /object.dy
     tE = -DE *        object.Ujp           *(object.Vip -    object.slip  * object.V[1,:,:] * object.grdEv ) /object.dx
     tW =  DW *np.roll(object.Ujp,1,axis=1) *(object.Vim -    object.slip  * object.V[1,:,:] * object.grdWv ) /object.dx
     

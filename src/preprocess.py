@@ -2,7 +2,9 @@ import os,sys
 import numpy as np
 import xarray as xr
 import datetime as dt
+import matplotlib.pyplot as plt
 
+from scipy.ndimage import binary_dilation as bd
 from integrate import updatesecondary,integrate
 from tools import tryread, extrapolate_initvals
 from physics import update_ambientfields
@@ -216,9 +218,9 @@ def create_mask(object):
 
     #Main masks
     #object.icemask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
-    #object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
-    object.tmask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
-    object.icemask = object.tmask
+    object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
+    object.icemask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
+    #object.icemask = object.tmask
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
@@ -240,6 +242,10 @@ def create_mask(object):
     object.tmaskxm1    = np.roll(object.tmask,-1,axis=1)
     object.tmaskxp1    = np.roll(object.tmask, 1,axis=1)    
     
+    object.icemaskym1    = np.roll(object.icemask,-1,axis=0)
+    object.icemaskyp1    = np.roll(object.icemask, 1,axis=0)
+    object.icemaskxm1    = np.roll(object.icemask,-1,axis=1)
+    object.icemaskxp1    = np.roll(object.icemask, 1,axis=1)    
     #If required, fill isolated ice shelf grid cells surrounded by grounded ice (subglacial lakes of size 1 grid cell)
     if object.fillisolated:
         apply_fill_isolated(object)
@@ -259,11 +265,27 @@ def create_mask(object):
 
     #Define ocean grid cells along ice shelf front at each side
     #isfE indicates ocean grid cells bordering the ice shelf on the Eastern side (positive x-direction)
-    object.isfE = object.ocn*object.tmaskxp1
-    object.isfN = object.ocn*object.tmaskyp1
-    object.isfW = object.ocn*object.tmaskxm1
-    object.isfS = object.ocn*object.tmaskym1
+    object.isfE = object.ocn*object.icemaskxp1
+    object.isfN = object.ocn*object.icemaskyp1
+    object.isfW = object.ocn*object.icemaskxm1
+    object.isfS = object.ocn*object.icemaskym1
     object.isf  = object.isfE+object.isfN+object.isfW+object.isfS
+
+    object.smask = np.ones(object.isf.shape)
+    isftemp = np.ones(object.isf.shape)
+    isftemp[:] = object.isf
+    sw = 50
+    mag=1500
+    for i in range(sw):
+        isftemp = bd(isftemp,mask=object.ocn)
+        object.smask+=isftemp
+    print(np.max(object.smask))
+    object.smask[object.smask!=1] = mag*(np.tanh(np.pi*((sw-object.smask[object.smask!=1]+2)/sw - 0.5))+1)*2
+    object.smask[np.logical_and(object.ocn==1,object.smask==1)] = np.max(object.smask)
+    object.smask = np.maximum(object.smask,1)
+    breakpoint()
+    
+    #object.smask=object.smask/object.smask
     
     #Define grounded grid cells along grounding line at each side
     #grlE indicates grounded grid cells bordering the ice shelf on the Eastern side (positive x-direction)
@@ -274,8 +296,19 @@ def create_mask(object):
     object.grl  = object.grlE+object.grlN+object.grlW+object.grlS
 
     ##Create masks for U- and V- velocities at N/E faces of grid points
-    object.umask = (object.tmask+object.isfW)*(1-np.roll(object.grlE,-1,axis=1))
-    object.vmask = (object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
+    #object.umask = (object.tmask+object.isfW)*(1-np.roll(object.grlE,-1,axis=1))
+    #object.vmask = (object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
+    object.umask = (object.tmask)*(1-np.roll(object.grlE,-1,axis=1))
+    object.vmask = (object.tmask)*(1-np.roll(object.grlN,-1,axis=0))
+    plt.imshow(object.umask)
+    plt.colorbar()
+    plt.show()
+    plt.imshow(object.tmask)
+    plt.colorbar()
+    plt.show()
+    plt.imshow(object.smask)
+    plt.colorbar()
+    plt.show()
     #object.umask = object.tmask
     #object.vmask = object.tmask
     #object.umask[np.roll(object.tmask,-1,axis=1) - object.tmask !=0] = 0
@@ -537,33 +570,21 @@ def init_from_scratch(object):
 
     object.D += object.Dinit*object.tmask
 
-    #object.TWterm = object.g*(object.zb-object.D[1,:,:])*(object.drho)
-    #object.U[0] = -(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
-    #object.V[0] = (np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
-    #object.U2[0] = (np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
-    #object.V2[0] = -(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
-
-    #object.U[1] = -(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
-    #object.V[1] = (np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
-    #object.U2[1] = (np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
-    #object.V2[1] = -(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
-
-    #object.U[2] = -(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
-    #object.V[2] = (np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
-    #object.U2[2] = (np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy*object.f)/2
-    #object.V2[2] = -(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx*object.f)/2
     #object.D[0] = 250+object.zb
     #object.D[0] = np.maximum(object.D[0],object.Dinit)
     #object.D[0] = np.minimum(object.D[0],object.H-object.minD)
     #object.D[1] = 250+object.zb
     #object.D[1] = np.maximum(object.D[1],object.Dinit)
-    #object.D[1] = np.minimum(object.D[0],object.H-object.minD)
+    ###object.D[1] = np.minimum(object.D[1],object.H-object.minD)
     #object.D[2] = 250+object.zb
     #object.D[2] = np.maximum(object.D[2],object.Dinit)
-    #object.D[2] = np.minimum(object.D[0],object.H-object.minD)
+    #object.D[2] = np.minimum(object.D[2],object.H-object.minD)
 
 
     object.D2 += object.H-object.D
+    plt.imshow(object.zb-object.D[0])
+    plt.colorbar()
+    plt.show()
     #object.D[1][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[2][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[0][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
