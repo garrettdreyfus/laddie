@@ -3,7 +3,6 @@ import numpy as np
 import xarray as xr
 import datetime as dt
 import matplotlib.pyplot as plt
-
 from scipy.ndimage import binary_dilation as bd
 from integrate import updatesecondary,integrate
 from tools import tryread, extrapolate_initvals

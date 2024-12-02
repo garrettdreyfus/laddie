@@ -420,7 +420,6 @@ def surface_pressure(object,delt,method="mg"):
             object.solver = ml
             print("solver constructed")
             object.xprev = B*0
-            breakpoint()
 
         else:
             Osum,Os,Ow = assemble_Osum(object.H,object.tmask,object.dx,object.dy)
@@ -442,10 +441,10 @@ def surface_pressure(object,delt,method="mg"):
         x = object.solver.solve(b,x0=object.xprev,tol=1e-12,maxiter=100)
         #print("residual: ",np.sum(np.abs(np.matmul(object.A,x)-b)))
         object.xprev=x
-        for i in range(len(x)):
-            pi[object.flatindexes==i]=x[i]
+        #for i in range(len(x)):
+            #pi[object.flatindexes==i]=x[i]
         #breakpoint()
-        #pi[object.flatindexes>=0]=x
+        pi[object.flatindexes>=0]=x
     else:
         pi_rhs = np.zeros(hu1.shape)
         pi_rhs = assemble_pi_rhs(pi_rhs,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask)
@@ -504,7 +503,7 @@ def surface_pressure(object,delt,method="mg"):
     #breakpoint()
 
     object.pressure_solves+=1
-    if (object.pressure_solves)%10 ==1 and debug:
+    if (object.pressure_solves)%300 ==1 and debug:
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
         X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
         im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)

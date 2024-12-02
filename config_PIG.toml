@@ -1,15 +1,15 @@
 [Run]
 name = "PIG"   # Run name
-days = 2        # [days] run duration
+days = 100        # [days] run duration
 
 [Time]
-dt = 10        # [s] timestep
+dt = 20        # [s] timestep
 restday = 1    # [days] interval to save restartfile
 saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
-filename = "./input/PIG_bm3.nc"  # File containing geometry input
+filename = "./input/PIGallice.nc"  # File containing geometry input
 maskoption = "BM"                # Choice for mask definition, choose from 'BM', 'UFEMISM', 'IMAUICE', and 'ISOMIP'
 #filename = "./input/Ocean1_input_geom_v1.01.nc"
 #maskoption = "ISOMIP"
@@ -27,7 +27,7 @@ removebergs = true          # Remove icebergs
 correctisf = true          # Remove ice shelf grids sticking out
 fillisolated = true        # Fill isolated ice shelf points, change to grounded
 
-cutdomain = true           # Cut out minimal domain around ice shelf for computation
+cutdomain = false           # Cut out minimal domain around ice shelf for computation
 
 [BMB]
 save_BMB    = true          # Whether to save latest BMB in a separate file
@@ -85,6 +85,7 @@ gamTfix   = 0.00018    # []          Turbulent exchange coefficient. Used only i
 Cd        = 2.5e-3    # []          drag coefficient
 Cdtop     = 1.1e-3    # []          Drag coefficient in Ustar
 Ah        = 6        # [m^2/s]     Laplacian viscosity
+Av        = 1e-4        # [m^2/s]     Laplacian viscosity
 Kh        = 1        # [m^2/s]     Diffusivity
 entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Gaspar' or 'Holland'
 mu        = 2.5       # []          Parameter in Gaspar entrainment. Gaspar: 0.5; Gladish: 2.5
