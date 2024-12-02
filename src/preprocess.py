@@ -272,17 +272,41 @@ def create_mask(object):
     object.isf  = object.isfE+object.isfN+object.isfW+object.isfS
 
     object.smask = np.ones(object.isf.shape)
+    object.taus = np.ones(object.isf.shape)
     isftemp = np.ones(object.isf.shape)
     isftemp[:] = object.isf
-    sw = 50
-    mag=1500
+    sw = 100
+    mag=500
     for i in range(sw):
         isftemp = bd(isftemp,mask=object.ocn)
-        object.smask+=isftemp
-    print(np.max(object.smask))
-    object.smask[object.smask!=1] = mag*(np.tanh(np.pi*((sw-object.smask[object.smask!=1]+2)/sw - 0.5))+1)*2
-    object.smask[np.logical_and(object.ocn==1,object.smask==1)] = np.max(object.smask)
-    object.smask = np.maximum(object.smask,1)
+        object.taus+=isftemp
+    object.smask = np.logical_and(object.ocn==1,~object.icemask)
+
+    tsponge = (24*60*60)
+    #object.smask[object.smask!=1] = mag*(np.tanh(np.pi*((sw-object.smask[object.smask!=1]+2)/sw - 0.5))+1)*2
+    # plt.imshow(1-np.tanh((object.smask+sw/2)/sw))
+    # plt.colorbar()
+    # plt.show()
+    #object.smask[object.smask==1]=0
+    #object.smask = np.maximum(object.smask,1)
+    plt.imshow(object.smask)
+    plt.show()
+    object.taus[object.smask] = (sw-object.taus[object.smask])+2
+    plt.imshow(object.taus)
+    plt.colorbar()
+    plt.show()
+    object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
+    plt.imshow(object.taus)
+    plt.colorbar()
+    plt.show()
+
+    plt.imshow(object.smask/(object.taus))
+    plt.colorbar()
+    plt.show()
+    object.smask=object.smask
+   #object.smask[object.smask!=1] = 1/((2*tsponge)/(np.tanh((object.smask[object.smask!=1]))/sw-0.5))
+    #object.smask[object.ocn==1] = np.max(object.smask)
+    #object.taus[object.smask==1] = 0
     breakpoint()
     
     #object.smask=object.smask/object.smask
@@ -454,6 +478,7 @@ def initialise_vars(object):
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
     object.H = object.zb-object.B
     object.B[object.H<50]=object.zb[object.H<50]-50
+    #object.B[object.H<300]=object.zb[object.H<300]-300
     object.H = object.zb-object.B
     #object.zb_full[object.zb_full>=-250]=-250
     #object.zb[object.zb>=-250]=-250

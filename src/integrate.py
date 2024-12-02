@@ -110,8 +110,9 @@ def generate_stars(object,delt):
                     +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
                     +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
                     +  -object.Av* div0((object.U[1,:,:]-object.U2[1,:,:]),ip_t(object,object.H/2.0)) \
-                    +  object.Ah*lapU(object)*object.smask \
+                    +  object.Ah*lapU(object)\
                     +  -0*object.detr* object.U[1,:,:] \
+                    + div0(-ip_t(object,object.D[1,:,:])*object.U[1,:,:],object.taus)*object.smask
                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
 
     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
@@ -131,8 +132,9 @@ def generate_stars(object,delt):
                     + -object.f*jp_t(object,object.D[1,:,:]*object.Uim) \
                     + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
                     + -object.Av* div0((object.V[1,:,:]-object.V2[1,:,:]),jp_t(object,object.H/2.0)) \
-                    + object.Ah*lapV(object)*object.smask \
+                    + object.Ah*lapV(object)\
                     +  -0*object.detr* object.V[1,:,:] \
+                    + div0(-jp_t(object,object.D[1,:,:])*object.V[1,:,:],object.taus)*object.smask
                     ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
 
     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
@@ -149,9 +151,10 @@ def generate_stars(object,delt):
 
                     +  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
                     +  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
-                    +  object.Ah*lapU2(object)*object.smask \
+                    +  object.Ah*lapU2(object)\
                     + -object.Av* div0((object.U2[1,:,:]-object.U[1,:,:]),ip_t(object,object.H/2.0)) \
                     -  -0*object.detr* object.U2[1,:,:] \
+                    + div0(-ip_t(object,object.D2[1,:,:])*object.U2[1,:,:],object.taus)*object.smask
                     ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
     object.Vstar2 = object.V2[0,:,:] \
@@ -167,9 +170,10 @@ def generate_stars(object,delt):
 
                     + -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
                     + -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
-                    + object.Ah*lapV2(object)*object.smask \
+                    + object.Ah*lapV2(object)\
                     + -object.Av* div0((object.V2[1,:,:]-object.V[1,:,:]),jp_t(object,object.H/2.0)) \
                     -  -0*object.detr* object.V2[1,:,:] \
+                    + div0(-jp_t(object,object.D2[1,:,:])*object.V2[1,:,:],(object.taus))*object.smask
                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
 
 @njit
