@@ -1,6 +1,6 @@
 [Run]
 name = "ref"   # Run name
-days = 150        # [days] run duration
+days = 100        # [days] run duration
 
 [Time]
 dt = 200        # [s] timestep
@@ -105,6 +105,16 @@ convtime  = 1000      # [s]         Used for convop = 2 | Restoring time scale t
 
 [Output]
 
+save_Uu  = true
+save_Vv  = true
+save_Ut  = true
+save_Vt  = true
+save_D  = true
+save_entr  = true
+save_melt  = true
+save_ent2  = true
+save_detr  = true
+save_RL  = true
 #Choose variables to save
 #save_Uu  = true
 #save_Vu  = true

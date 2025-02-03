@@ -1,9 +1,9 @@
 [Run]
 name = "NoDetr"   # Run name
-days = 20        # [days] run duration
+days = 100        # [days] run duration
 
 [Time]
-dt = 60        # [s] timestep
+dt = 60       # [s] timestep
 restday = 1    # [days] interval to save restartfile
 #saveday = 1    # [days] interval to save model output
 saveday = 1    # [days] interval to save model output
@@ -33,7 +33,7 @@ isomipcond = "warm" # ISOMIP condition, either 'warm' or 'cold'
 
 [Options]
 correctisf = false    #             Remove ice shelf grids sticking out and isolated points
-slip      = 1         # [0...2]     Factor free slip: 0, no slip: 2, partial no slip: between 0 and 2
+slip      = 0         # [0...2]     Factor free slip: 0, no slip: 2, partial no slip: between 0 and 2
 convop    = 1         # [0,1,2]     Option for convection when stratification is unstable 0: prescribe mindrho | 1: instantaneous convection | 2: restoring convection
 boundop   = 1         # [0,1]       Option for boundary conditions. Should be set to 1
 usegamtfix = true    #             Use fixed gamma_T rather than computing it
@@ -42,12 +42,12 @@ usegamtfix = true    #             Use fixed gamma_T rather than computing it
 results = "./output/"  # Main results directory in which rundirs are placed
 
 [Filenames]
-restartfile = ""#"./results/restart/CrossDots_0.5_tanh_Tdeep0.4_ztcl-500_001.nc"  # Restartfile
+restartfile = "./output/NoDetr_2025-01-13/restart_latest.nc"  # Restartfile
 logfile = "log.txt" # Log file
 
 [Initialisation]
 Dinit = 10.0       # [m]         Initial uniform thickness D
-fromrestart = false    # Try starting from an existing restart file
+fromrestart = true    # Try starting from an existing restart file
 
 [Parameters]
 #External forcing
@@ -64,7 +64,7 @@ gamTfix   = 0.00018    # []          Turbulent exchange coefficient. If False: c
 Cd        = 2.5e-3    # []          drag coefficient
 Cdtop     = 1.1e-3    # []          Drag coefficient in Ustar
 Ah        = 6        # [m^2/s]     Laplacian viscosity
-Av        = 1        # [m^2/s]     vertical viscosity
+Av        = 0        # [m^2/s]     vertical viscosity
 Kh        = 1        # [m^2/s]     Diffusivity
 entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Holland' or 'Gaspar'
 mu        = 2.5       # []          Parameter in Gaspar entrainment. Gaspar: 0.5; Gladish: 2.5
@@ -106,4 +106,11 @@ convtime  = 1000      # [s]         Used for convop = 2 | Restoring time scale t
 
 #Choose variables to save
 save_Uu  = true
-save_Vu  = true
+save_Vv  = true
+save_Ut  = true
+save_Vt  = true
+save_D  = true
+save_entr  = true
+save_melt  = true
+save_ent2  = true
+save_detr  = true

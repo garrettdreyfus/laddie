@@ -21,7 +21,7 @@ def integrate(object,nsteps=2):
 
 def prepare_integrate(object):
     """Compute reused fields in integration, after integrating D"""
-    object.D2 = (object.H-object.D)*object.tmask
+    object.D2 = (object.H-object.D)
     if (object.D2[1][object.tmask==1]<=0).any():
         print("LAYER THICKNESS WENT TO ZERO")
         exit()
@@ -41,7 +41,7 @@ def timefilter(object):
     object.U[1,:,:] += object.nu/2 * (object.U[0,:,:]+object.U[2,:,:]-2*object.U[1,:,:]) * object.umask
     object.V[1,:,:] += object.nu/2 * (object.V[0,:,:]+object.V[2,:,:]-2*object.V[1,:,:]) * object.vmask
 
-    object.D2[1,:,:] = (object.H-object.D[1])*object.tmask
+    object.D2[1,:,:] = (object.H-object.D[1])
     object.U2[1,:,:] += object.nu/2 * (object.U2[0,:,:]+object.U2[2,:,:]-2*object.U2[1,:,:]) * object.umask
     object.V2[1,:,:] += object.nu/2 * (object.V2[0,:,:]+object.V2[2,:,:]-2*object.V2[1,:,:]) * object.vmask
 
@@ -54,7 +54,7 @@ def timefilter(object):
 def updatevars(object):
     """Update temporary variables"""
     object.D = np.roll(object.D,-1,axis=0)
-    object.D2 = (object.zb-object.B)-object.D
+    object.D2 = (object.H)-object.D
     object.U = np.roll(object.U,-1,axis=0)
     object.V = np.roll(object.V,-1,axis=0)
     object.U2 = np.roll(object.U2,-1,axis=0)
@@ -111,6 +111,7 @@ def generate_stars(object,delt):
                     +  -object.Cd* object.U[1,:,:] *(object.U[1,:,:]**2 + ip(jm(object.V[1,:,:]))**2)**.5 \
                     +  -object.Av* div0((object.U[1,:,:]-object.U2[1,:,:]),ip_t(object,object.H/2.0)) \
                     +  object.Ah*lapU(object)\
+                    +  -object.nentr*object.U2[1,:,:] \
                     +  -0*object.detr* object.U[1,:,:] \
                     + div0(-ip_t(object,object.D[1,:,:])*object.U[1,:,:],object.taus)*object.smask
                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
@@ -133,6 +134,7 @@ def generate_stars(object,delt):
                     + -object.Cd* object.V[1,:,:] *(object.V[1,:,:]**2 + jp(im(object.U[1,:,:]))**2)**.5 \
                     + -object.Av* div0((object.V[1,:,:]-object.V2[1,:,:]),jp_t(object,object.H/2.0)) \
                     + object.Ah*lapV(object)\
+                    +  -object.nentr*object.V2[1,:,:] \
                     +  -0*object.detr* object.V[1,:,:] \
                     + div0(-jp_t(object,object.D[1,:,:])*object.V[1,:,:],object.taus)*object.smask
                     ),jp_t(object,object.D[1,:,:])) * object.vmask * delt
@@ -154,6 +156,7 @@ def generate_stars(object,delt):
                     +  object.Ah*lapU2(object)\
                     + -object.Av* div0((object.U2[1,:,:]-object.U[1,:,:]),ip_t(object,object.H/2.0)) \
                     -  -0*object.detr* object.U2[1,:,:] \
+                    +  object.nentr*object.U2[1,:,:] \
                     + div0(-ip_t(object,object.D2[1,:,:])*object.U2[1,:,:],object.taus)*object.smask
                     ),ip_t(object,object.D2[1,:,:])) * object.umask * delt
     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
@@ -173,6 +176,7 @@ def generate_stars(object,delt):
                     + object.Ah*lapV2(object)\
                     + -object.Av* div0((object.V2[1,:,:]-object.V[1,:,:]),jp_t(object,object.H/2.0)) \
                     -  -0*object.detr* object.V2[1,:,:] \
+                    +  object.nentr*object.V2[1,:,:] \
                     + div0(-jp_t(object,object.D2[1,:,:])*object.V2[1,:,:],(object.taus))*object.smask
                     ),jp_t(object,object.D2[1,:,:])) * object.vmask * delt
 
@@ -373,7 +377,7 @@ def surface_pressure(object,delt,method="mg"):
     debug = False
 #
 
-    if (object.pressure_solves)%1==0 and True and debug:
+    if (object.pressure_solves)%1==0 and debug:
 
         #termu = - object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/(object.dx)
         #termu[object.umask==0]=np.nan
@@ -394,7 +398,7 @@ def surface_pressure(object,delt,method="mg"):
         im = ax4.imshow(object.Vstar2)
         plt.colorbar(im,ax=ax4)
         plt.show()
-        breakpoint()
+        #breakpoint()
 
 
 
@@ -437,7 +441,7 @@ def surface_pressure(object,delt,method="mg"):
     if method=="mg":
         b = np.zeros(object.A.shape[0])
         b = assemble_mg_b(b,object.flatindexes,hu1+hu2,hv1+hv2,object.dx,object.dy,delt,object.umask,object.vmask,object.tmask)
-        pi = object.RL[1]*0
+        pi = object.RL*0
         x = object.solver.solve(b,x0=object.xprev,tol=1e-12,maxiter=100)
         #print("residual: ",np.sum(np.abs(np.matmul(object.A,x)-b)))
         object.xprev=x
@@ -452,7 +456,7 @@ def surface_pressure(object,delt,method="mg"):
         if object.pressure_solves >3:
             rp=0.66
         pi_tol = 10**-19
-        pi = object.RL[1]
+        pi = object.RL
         iters = 0
         pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
     #pi*0
@@ -469,7 +473,6 @@ def surface_pressure(object,delt,method="mg"):
         ax1.imshow(pi)
         plt.show()
 
-    object.RL[1] = pi
     #pi=pi*object.tmask
     #plt.imshow(pi)
     #object.U[2,:,:] = object.Ustar + delt*pressure_diff_u(object,pi,1,1)/(object.dx)*object.umask
@@ -480,6 +483,7 @@ def surface_pressure(object,delt,method="mg"):
     object.U2[2,:,:] = (object.Ustar2 + pi_x)*object.umask
     object.V[2,:,:] = (object.Vstar + pi_y)*object.vmask
     object.V2[2,:,:] = (object.Vstar2 + pi_y)*object.vmask
+    object.RL[:] = pi
 
     #hu1 = object.U[2]*tools.ip_t(object,object.D[1])*object.umask
     #hv1 = object.V[2]*tools.jp_t(object,object.D[1])*object.vmask
@@ -522,14 +526,14 @@ def surface_pressure(object,delt,method="mg"):
         im = ax6.pcolormesh(X,Y,object.V2[2]*object.vmask)
         plt.colorbar(im,ax=ax6)
 #
-        im = ax7.pcolormesh(X,Y,object.RL[1])
+        im = ax7.pcolormesh(X,Y,object.RL)
         plt.colorbar(im,ax=ax7)
         im = ax8.pcolormesh(X,Y,object.Ustar2)
         plt.colorbar(im,ax=ax8)
         im = ax9.pcolormesh(X,Y,object.Vstar2)
         plt.colorbar(im,ax=ax9)
         plt.show()
-        breakpoint()
+        #breakpoint()
 
     if (object.pressure_solves)%50 ==0 or object.pressure_solves<5:
         print("-----")
@@ -544,9 +548,6 @@ def surface_pressure(object,delt,method="mg"):
         print("totalvolume: ",np.sum(object.tmask*(object.D2[1]+object.D[1])))
         print("pressure sulves: ", object.pressure_solves)
 
-    #plt.show()
-    
-    object.RL[1]=pi
 
 
 def intT(object,delt):

@@ -2,6 +2,7 @@ import os
 from tools import *
 from physics import *
 from preprocess import *
+import matplotlib.pyplot as plt
 
 def savefields(object):
     """Store time-average fields and save"""
@@ -17,6 +18,9 @@ def savefields(object):
         object.Vvav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.V[1,1:-1,1:-1]    #V on vgrid
     if object.save_D:
         object.Dav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.D[1,1:-1,1:-1]
+
+    if object.save_RL:
+        object.RLav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.RL[1:-1,1:-1]
 
     if object.save_Ut:
         object.U2av[object.jmin:object.jmax+1,object.imin:object.imax+1] += im(object.U2[1,1:-1,1:-1]) #U on tgrid
@@ -50,6 +54,9 @@ def savefields(object):
 
         #Divide accumulated values by number of time steps and apply mask
         #Added to dsav data set
+    
+        if object.save_RL:
+            object.dsav['RL'][:] = object.RLav/object.count * np.where(object.tmask_full,1,np.nan)
         if object.save_Ut:
             object.dsav['Ut'][:] = object.Uav/object.count * np.where(object.tmask_full,1,np.nan)
         if object.save_Uu:
@@ -157,6 +164,8 @@ def savefields(object):
             object.ent2av *= 0
         if object.save_detr:
             object.detrav *= 0        
+        if object.save_detr:
+            object.RLav *= 0        
         
         #Start time for next time-average 
         object.dsav.attrs['time_start'] = object.time[object.t]
@@ -238,3 +247,7 @@ def printdiags(object):
         d_conv = object.convection.sum()
         
         object.print2log(f'{object.time[object.t]:8.03f} days || {d_Dav:5.01f}  [{d_Dmin:4.02f} {d_Dmax:4.0f}] m || {d_Mav: 5.02f} | {d_Mmax: 3.0f} m/yr || {d_MWF:5.02f} % || {d_Etot:5.03f} + {d_E2tot:5.03f} - {d_DEtot:5.03f} | {d_PSI: 5.03f} Sv || {d_Vmax: 3.02f} m/s || {d_drho: 5.05f} {d_conv: 3.0f} []')
+        print(f'{object.time[object.t]:8.03f} days || {d_Dav:5.01f}  [{d_Dmin:4.02f} {d_Dmax:4.0f}] m || {d_Mav: 5.02f} | {d_Mmax: 3.0f} m/yr || {d_MWF:5.02f} % || {d_Etot:5.03f} + {d_E2tot:5.03f} - {d_DEtot:5.03f} | {d_PSI: 5.03f} Sv || {d_Vmax: 3.02f} m/s || {d_drho: 5.05f} {d_conv: 3.0f} []')
+        #plt.imshow(object.convD,vmin=-0.001,vmax=0.001)
+        #plt.colorbar()
+        #plt.show()

@@ -7,6 +7,8 @@ from scipy.ndimage import binary_dilation as bd
 from integrate import updatesecondary,integrate
 from tools import tryread, extrapolate_initvals
 from physics import update_ambientfields
+from scipy.ndimage import gaussian_filter
+
 
 def create_rundir(object,configfile):
     """Create run directory and logfile"""
@@ -191,6 +193,7 @@ def read_config(object):
     object.save_Ut    = tryread(object,"Output","save_Ut",bool,default=True)
     object.save_Vv    = tryread(object,"Output","save_Vv",bool,default=False)
     object.save_Vt    = tryread(object,"Output","save_Vt",bool,default=True)    
+    object.save_RL   = tryread(object,"Output","save_RL",bool,default=False)
     object.save_D     = tryread(object,"Output","save_D",bool,default=True)
     object.save_T     = tryread(object,"Output","save_T",bool,default=True)
     object.save_S     = tryread(object,"Output","save_S",bool,default=True)
@@ -217,9 +220,12 @@ def create_mask(object):
 
     #Main masks
     #object.icemask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
-    object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
     object.icemask = np.where(object.mask==3,1,0)             #Grid cells with floating ice, on which computations are applied
-    #object.icemask = object.tmask
+    onlyice=False
+    if onlyice:
+        object.tmask = object.icemask
+    else:
+        object.tmask = np.where(np.logical_or(object.mask==3,object.mask==0),1,0)             #Grid cells with floating ice, on which computations are applied
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
@@ -274,12 +280,15 @@ def create_mask(object):
     object.taus = np.ones(object.isf.shape)
     isftemp = np.ones(object.isf.shape)
     isftemp[:] = object.isf
-    sw = 100
+    buf = 10
+    sw = 100+buf
     mag=500
     for i in range(sw):
         isftemp = bd(isftemp,mask=object.ocn)
         object.taus+=isftemp
     object.smask = np.logical_and(object.ocn==1,~object.icemask)
+    object.taus = object.taus-buf
+    object.smask[object.taus<0]=0
 
     tsponge = (24*60*60)
     #object.smask[object.smask!=1] = mag*(np.tanh(np.pi*((sw-object.smask[object.smask!=1]+2)/sw - 0.5))+1)*2
@@ -288,25 +297,23 @@ def create_mask(object):
     # plt.show()
     #object.smask[object.smask==1]=0
     #object.smask = np.maximum(object.smask,1)
-    plt.imshow(object.smask)
-    plt.show()
-    object.taus[object.smask] = (sw-object.taus[object.smask])+2
-    plt.imshow(object.taus)
-    plt.colorbar()
-    plt.show()
+    #plt.imshow(object.smask)
+    #plt.show()
+    object.taus[object.smask] = (sw-object.taus[object.smask])
+    #plt.imshow(object.taus)
+    #plt.colorbar()
+    #plt.show()
     object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
-    plt.imshow(object.taus)
-    plt.colorbar()
-    plt.show()
+    #plt.imshow(object.taus)
+    #plt.colorbar()
+    #plt.show()
 
-    plt.imshow(object.smask/(object.taus))
-    plt.colorbar()
-    plt.show()
-    object.smask=object.smask
+    #plt.imshow(object.smask/(object.taus))
+    #plt.colorbar()
+    #object.smask=object.smask*0
    #object.smask[object.smask!=1] = 1/((2*tsponge)/(np.tanh((object.smask[object.smask!=1]))/sw-0.5))
     #object.smask[object.ocn==1] = np.max(object.smask)
     #object.taus[object.smask==1] = 0
-    breakpoint()
     
     #object.smask=object.smask/object.smask
     
@@ -323,15 +330,15 @@ def create_mask(object):
     #object.vmask = (object.tmask+object.isfS)*(1-np.roll(object.grlN,-1,axis=0))
     object.umask = (object.tmask)*(1-np.roll(object.grlE,-1,axis=1))
     object.vmask = (object.tmask)*(1-np.roll(object.grlN,-1,axis=0))
-    plt.imshow(object.umask)
-    plt.colorbar()
-    plt.show()
-    plt.imshow(object.tmask)
-    plt.colorbar()
-    plt.show()
-    plt.imshow(object.smask)
-    plt.colorbar()
-    plt.show()
+    #plt.imshow(object.umask)
+    #plt.colorbar()
+    #plt.show()
+    #plt.imshow(object.tmask)
+    #plt.colorbar()
+    #plt.show()
+    #plt.imshow(object.smask)
+    #plt.colorbar()
+    #plt.show()
     #object.umask = object.tmask
     #object.vmask = object.tmask
     #object.umask[np.roll(object.tmask,-1,axis=1) - object.tmask !=0] = 0
@@ -461,7 +468,7 @@ def initialise_vars(object):
     #Major variables. Three arrays for storage of previous timestep, current timestep, and next timestep
 
     object.U = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
-    object.RL = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
+    object.RL = np.zeros((object.ny+2,object.nx+2)).astype('float64')
     object.U2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.V = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.V2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
@@ -475,10 +482,14 @@ def initialise_vars(object):
     
     #Remove positive values of ice shelf draft. Set shallowest ice shelf draft to 1 meters
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
+    object.zb = gaussian_filter(object.zb,sigma=1)
+    plt.imshow(object.zb)
+    plt.show()
+
     object.H = object.zb-object.B
-    object.B[object.H<50]=object.zb[object.H<50]-50
+    #object.B[object.H<10**3]=object.zb[object.H<10**3]-10**3
     #object.B[object.H<300]=object.zb[object.H<300]-300
-    object.H = object.zb-object.B
+    #object.H = object.zb-object.B
     #object.zb_full[object.zb_full>=-250]=-250
     #object.zb[object.zb>=-250]=-250
     #object.zb = object.zb*object.tmask
@@ -567,20 +578,6 @@ def init_from_scratch(object):
     #Get ambient temperature and salinity at base of the mixed layer
     update_ambientfields(object)
 
-    #Initialise thickness D
-    #object.umask[:,-20:]=0
-
-    #
-    #object.zb[object.zb!=0] = 0
-
-#
-    #object.B[:]=object.zb-20
-
-    object.H = object.zb-object.B
-    object.B[object.H<50]=object.zb[object.H<50]-50
-
-    object.H = object.zb-object.B
-
     object.Hym1    = np.roll(        object.H*object.tmask,-1,axis=0)
     object.Hyp1    = np.roll(        object.H*object.tmask, 1,axis=0)
     object.Hxm1    = np.roll(        object.H*object.tmask,-1,axis=1)
@@ -597,18 +594,18 @@ def init_from_scratch(object):
     #object.D[0] = 250+object.zb
     #object.D[0] = np.maximum(object.D[0],object.Dinit)
     #object.D[0] = np.minimum(object.D[0],object.H-object.minD)
-    #object.D[1] = 250+object.zb
+    ###object.D[1] = 250+object.zb
     #object.D[1] = np.maximum(object.D[1],object.Dinit)
-    ###object.D[1] = np.minimum(object.D[1],object.H-object.minD)
+    #object.D[1] = np.minimum(object.D[1],object.H-object.minD)
     #object.D[2] = 250+object.zb
     #object.D[2] = np.maximum(object.D[2],object.Dinit)
     #object.D[2] = np.minimum(object.D[2],object.H-object.minD)
 
 
     object.D2 += object.H-object.D
-    plt.imshow(object.zb-object.D[0])
-    plt.colorbar()
-    plt.show()
+    ##plt.imshow(object.zb-object.D[0])
+    #plt.colorbar()
+    #plt.show()
     #object.D[1][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[2][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
     #object.D[0][object.D[0]>object.H]=object.H[object.D[0]>object.H]*object.tmask[object.D[0]>object.H]
@@ -659,6 +656,12 @@ def prepare_output(object):
     if object.lonlat:
         object.dsav = object.dsav.assign_coords({'lon':object.lon,'lat':object.lat})
 
+
+    if object.save_Ut:
+        object.RLav = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['RL'] = (['y','x'], object.RLav.astype('float64'))
+        object.dsav['RL'].attrs['name'] = 'Rigid lid pressure'
+        object.dsav['RL'].attrs['units'] = 'm'
     #U velocity on tgrid
     if object.save_Ut:
         object.Uav = np.zeros((object.ny_full,object.nx_full))
