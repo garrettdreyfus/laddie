@@ -7,6 +7,8 @@ from numba import njit
 import tools
 import pyamg
 from pyamg.krylov import bicgstab
+from scipy.sparse import csr_matrix
+
 
 def integrate(object,nsteps=2):
     """Integration of N time steps. During normal integration, nsteps = 2 (now-centered Leapfrog scheme)"""
@@ -413,6 +415,7 @@ def surface_pressure(object,delt,method="mg"):
                 object.flatindexes[nonzero[0][i],nonzero[1][i]]=count
                 count+=1
             A = np.zeros([count,count])
+            #A = csr_matrix([count,count],dtype=float)
             A = assemble_mg_A(A,object.H,object.flatindexes,object.tmask,object.dx,object.dy)
 #
             B = np.ones((A.shape[0],1), dtype=A.dtype); BH = B.copy()

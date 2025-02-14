@@ -194,6 +194,7 @@ def read_config(object):
     object.save_Vv    = tryread(object,"Output","save_Vv",bool,default=False)
     object.save_Vt    = tryread(object,"Output","save_Vt",bool,default=True)    
     object.save_RL   = tryread(object,"Output","save_RL",bool,default=False)
+    object.save_vortterms   = tryread(object,"Output","save_vortterms",bool,default=False)
     object.save_D     = tryread(object,"Output","save_D",bool,default=True)
     object.save_T     = tryread(object,"Output","save_T",bool,default=True)
     object.save_S     = tryread(object,"Output","save_S",bool,default=True)
@@ -488,8 +489,8 @@ def initialise_vars(object):
 
     object.H = object.zb-object.B
     #object.B[object.H<10**3]=object.zb[object.H<10**3]-10**3
-    #object.B[object.H<300]=object.zb[object.H<300]-300
-    #object.H = object.zb-object.B
+    object.B[object.H<20]=object.zb[object.H<20]-20
+    object.H = object.zb-object.B
     #object.zb_full[object.zb_full>=-250]=-250
     #object.zb[object.zb>=-250]=-250
     #object.zb = object.zb*object.tmask
@@ -657,11 +658,41 @@ def prepare_output(object):
         object.dsav = object.dsav.assign_coords({'lon':object.lon,'lat':object.lat})
 
 
+
     if object.save_Ut:
+        object.TWtermav = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['TWtermav'] = (['y','x'], object.TWtermav.astype('float64'))
+        object.dsav['TWtermav'].attrs['name'] = 'TWterm'
+        object.dsav['TWtermav'].attrs['units'] = 'm'
+
+        object.coriolisav = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['coriolisav'] = (['y','x'], object.coriolisav.astype('float64'))
+        object.dsav['coriolisav'].attrs['name'] = 'stretching term'
+        object.dsav['coriolisav'].attrs['units'] = 'm'
+
+
+
         object.RLav = np.zeros((object.ny_full,object.nx_full))
         object.dsav['RL'] = (['y','x'], object.RLav.astype('float64'))
         object.dsav['RL'].attrs['name'] = 'Rigid lid pressure'
         object.dsav['RL'].attrs['units'] = 'm'
+
+
+        object.RLav = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['RL'] = (['y','x'], object.RLav.astype('float64'))
+        object.dsav['RL'].attrs['name'] = 'Rigid lid pressure'
+        object.dsav['RL'].attrs['units'] = 'm'
+
+        #object.bed = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['bed'] = (['y','x'], object.RLav.astype('float64'))
+        object.dsav['bed'].attrs['name'] = 'Bed depth'
+        object.dsav['bed'].attrs['units'] = 'm'
+
+        #object.zb = np.zeros((object.ny_full,object.nx_full))
+        object.dsav['zb'] = (['y','x'], object.RLav.astype('float64'))
+        object.dsav['zb'].attrs['name'] = 'Draft depth'
+        object.dsav['zb'].attrs['units'] = 'm'
+ 
     #U velocity on tgrid
     if object.save_Ut:
         object.Uav = np.zeros((object.ny_full,object.nx_full))

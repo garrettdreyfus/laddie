@@ -1,0 +1,18 @@
+[project]
+name = "laddie"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "astropy>=7.0.1",
+    "ipython>=8.32.0",
+    "matplotlib>=3.10.0",
+    "netcdf4>=1.7.2",
+    "numba>=0.61.0",
+    "numpy>=2.1.3",
+    "pyamg>=5.2.1",
+    "scipy>=1.15.1",
+    "tomli>=2.2.1",
+    "xarray>=2025.1.2",
+]
