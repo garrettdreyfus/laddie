@@ -45,11 +45,8 @@ def savefields(object):
         object.ent2av[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.ent2[1:-1,1:-1]
     if object.save_detr:
         object.detrav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.detr[1:-1,1:-1]
-
     if object.save_vortterms:
-        object.coriolisav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.ent2[1:-1,1:-1] + object.entr[1:-1,1:-1] - object.detr[1:-1,1:-1]
-
-        object.TWtermav[object.jmin:object.jmax+1,object.imin:object.imax+1] += object.TWterm[1:-1,1:-1]
+        object.vorttermsav[:,object.jmin:object.jmax+1,object.imin:object.imax+1] += object.vortterms[:,1:-1,1:-1]
     
     #Counter for the number of timesteps added
     object.count += 1
@@ -98,10 +95,8 @@ def savefields(object):
             object.dsav['ent2'][:] = object.ent2av * 3600*24*365.25/object.count * np.where(object.tmask_full,1,np.nan)
         if object.save_detr:
             object.dsav['detr'][:] = object.detrav * 3600*24*365.25/object.count * np.where(object.tmask_full,1,np.nan)
-
         if object.save_vortterms:
-            object.dsav['coriolisav'][:] = object.coriolisav/object.count * np.where(object.tmask_full,1,np.nan)
-            object.dsav['TWtermav'][:] = object.TWtermav/object.count * np.where(object.tmask_full,1,np.nan)
+            object.dsav['vortterms'][:] = object.vorttermsav/object.count
 
         #Bulk values
         object.dsav['mav']  = 3600*24*365.25*(object.meltav*object.dx*object.dy).sum()/(object.tmask_full*object.dx*object.dy).sum()
@@ -176,6 +171,9 @@ def savefields(object):
             object.detrav *= 0        
         if object.save_detr:
             object.RLav *= 0        
+
+        if object.save_vortterms:
+            object.vorttermsav *= 0        
         
         #Start time for next time-average 
         object.dsav.attrs['time_start'] = object.time[object.t]

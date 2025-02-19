@@ -14,7 +14,7 @@ import numpy
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-27_w100/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-28_zootopia/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-03_momentumentrain/']
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-13_x14/']
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-12-02_tenthtau/']
 
 file_pattern = re.compile(r'.*?(\d+).*?')
@@ -36,47 +36,83 @@ datasets = []
 for i in files:
     datasets.append(xr.open_dataset(i))
 ds = xr.combine_nested(datasets,concat_dim="time")
-ds.V2t[20:].mean(dim="time").plot.pcolormesh()
-plt.show()
 
-
-def frame_func_v( data ):
+def frame_func_v( data,t ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(vmin=-0.2,vmax=0.2,cmap="RdBu_r")
+    f.suptitle(t)
     return f
 
-def frame_func_d( data ):
+def frame_func_d( data,t ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(vmin=10,vmax=100,cmap="magma")
+    f.suptitle(t)
     return f
 
-def frame_func_d2( data ):
+def frame_func_d2( data,t ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(vmin=10,vmax=1000,cmap="magma")
+    f.suptitle(t)
     return f
 
-def frame_func_T( data ):
+def frame_func_T( data,t ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(vmin=-2,vmax=2,cmap="magma")
+    f.suptitle(t)
     return f
 
-def frame_func_S( data ):
+def frame_func_S( data,t ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(vmin=34.2,vmax=35.7,cmap="magma")
+    f.suptitle(t)
     return f
 
-def frame_func_melt( data ):
+def frame_func_melt( data,t ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(cmap="RdBu_r")
+    f.suptitle(t)
     return f
 
-def frame_func_twterm( data ):
+def frame_func_twterm( data,t  ):
     f,a = plt.subplots(1,1)
     data.plot.pcolormesh(vmin=-1000,vmax=200,cmap="magma")
+    f.suptitle(t)
     return f
-print(ds)
+
+def frame_func_relvort( data, t ):
+    f,a = plt.subplots(1,1)
+    data.plot.pcolormesh(vmin=-8e-5,vmax=8e-5,cmap="RdBu_r")
+    f.suptitle(t)
+    return f
+
+def frame_func_pv( data,t ):
+    f,a = plt.subplots(1,1)
+    data.plot.pcolormesh(vmin=-4e-6,vmax=4e-6,cmap="RdBu_r")
+    f.suptitle(t)
+    return f
+
+
+
 anim = True
 if anim:
+
+    dx = (ds.x.values[1]-ds.x.values[0])
+    dy = (ds.y.values[1]-ds.y.values[0])
+
+    ds['relvort'] = (ds.T.dims,(np.roll(ds.V2v,-1,axis=1)-np.roll(ds.V2v,1,axis=1))/dx - (np.roll(ds.U2u,-1,axis=0)-np.roll(ds.U2u,1,axis=0))/dy)
+    ds['pv'] = (ds.T.dims,(ds.relvort.data-1.37e-4)/ds.D2.data)
+
+    xAnimate.make_animation( ds.relvort, fp_out = './RELVORT.mp4',
+                             anim_dim = 'time', fps=2,
+                             frame_func = frame_func_relvort)
+
+
+    xAnimate.make_animation( ds.pv, fp_out = './PV.mp4',
+                             anim_dim = 'time', fps=2,
+                             frame_func = frame_func_pv)
+
+
+
     xAnimate.make_animation( ds.TWtermav, fp_out = './Twterm.mp4',
                              anim_dim = 'time', fps=2,
                              frame_func = frame_func_twterm)
@@ -84,8 +120,6 @@ if anim:
     xAnimate.make_animation( ds.melt, fp_out = './melt.mp4',
                              anim_dim = 'time',fps=2,
                              frame_func = frame_func_melt)
-    ##
-
 
     xAnimate.make_animation( ds.Ut, fp_out = './U.mp4',
                             anim_dim = 'time',fps=2,

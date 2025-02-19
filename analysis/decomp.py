@@ -32,85 +32,117 @@ def dsFromPath(folderpaths):
         datasets.append(xr.open_dataset(i))
     return xr.combine_nested(datasets,concat_dim="time")
 
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-13_x14/']
+#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-18_fixcurl/']
+
 ds = dsFromPath(folderpaths)
-f = -1.37e-4
-Cd = 2.5e-3
-t0=10
-u2 = ds.U2u[t0:].mean(dim="time").values
-v2 = ds.V2v[t0:].mean(dim="time").values
-dsbed = xr.open_dataset("../input/mitgcm.nc")
-bed = dsbed.bedrockTopography.values
-dx = (ds.x.values[1]-ds.x.values[0])
-dy = (ds.y.values[1]-ds.y.values[0])
+def vortBudgetBasic(ds):
+    f = -1.37e-4
+    Cd = 2.5e-3
+    t0 = 10
+    Ah = 10
+    u1 = ds.Uu[t0:].mean(dim="time").values
+    v1 = ds.Vv[t0:].mean(dim="time").values
+    u2 = ds.U2u[t0:].mean(dim="time").values
+    v2 = ds.V2v[t0:].mean(dim="time").values
+    dx = (ds.x.values[1]-ds.x.values[0])
+    dy = (ds.y.values[1]-ds.y.values[0])
+    #h2 = 0.003*(ds.D2[t0:].mean(dim="time").values+bed)+ds.RL[t0:].mean(dim="time").values# + ds.rl[75:].mean(dim="time").values
+    h2 = ds.D2[t0:].mean(dim="time").values
+    h = ds.D[t0:].mean(dim="time").values
+    #M = 0.03*(ds.D2[t0:].mean(dim="time").values+bed)
+    fig, (ax1,ax2,ax3) = plt.subplots(1,3)
+    dhdx = (-h2+np.roll(h2,-1,axis=1))/dx
+    dhdy = (-h2+np.roll(h2,-1,axis=0))/dy
+    u2mag = np.sqrt(u2**2+v2**2)
+    curl = (-u2*u2mag+np.roll(u2*u2mag,-1,axis=0))/dy
+    curl2 = (-v2*u2mag+np.roll(v2*u2mag,-1,axis=1))/dx
+    curl = -curl+curl2
+    X,Y = np.meshgrid(ds.x.values,ds.y.values)
 
-#h2 = 0.003*(ds.D2[t0:].mean(dim="time").values+bed)+ds.RL[t0:].mean(dim="time").values# + ds.rl[75:].mean(dim="time").values
-h2 = ds.D2[t0:].mean(dim="time").values
+    fig, ((ax1,ax2,ax5),(ax3,ax4,ax6)) = plt.subplots(2,3)
+    ax1.pcolormesh(X,Y,f*(ds.ent2+ds.entr-ds.detr)[t0:].mean(dim="time")/(60*60*24*365),vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
+    #ax2.pcolormesh(X,Y,intface,vmin=-8e-7,vmax=8e-7,cmap="RdBu_r")
+    ax2.pcolormesh(X,Y,(u2*dhdx + v2*dhdy)*(f**1),vmin=-8e-8,vmax=8e-8,cmap="RdBu_r")
+    ax3.pcolormesh(X,Y,Cd*curl,vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
+
+    dudx = (-u2+np.roll(u2,-1,axis=1))/dx
+    dvdy = (-v2+np.roll(v2,-1,axis=0))/dy
+    hudx = h2*dudx
+    hvdy = h2*dvdy
+
+    dyhvdy = (-hvdy+np.roll(hvdy,-1,axis=0))/dy
+    dxhudx = (-hudx+np.roll(hudx,-1,axis=0))/dx
+
+    dyhvdy = (dyhvdy+np.roll(dyhvdy,1,axis=1))/dy
+    dxhudx = (dxhudx+np.roll(dxhudx,1,axis=0))/dx
+
+    ax4.pcolormesh(X,Y,Ah*(dyhvdy+dxhudx),vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
+
+    H = h+h2
+
+    Uvvisc = (u1-u2)*2/((H+np.roll(H,-1,axis=1))/2)
+    Vvvisc = (v1-v2)*2/((H+np.roll(H,-1,axis=0))/2)
+
+    Avcurl = (1e-4)*(-(-Uvvisc-np.roll(Uvvisc,-1,axis=0))/dy + (-Vvvisc-np.roll(Vvvisc,-1,axis=1))/dx)
+    ax5.pcolormesh(X,Y,Avcurl,vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
+
+    plt.show()
+
+def vortBudget(ds):
+    t0=12
+    fig, axises = plt.subplots(3,4)
+    titles = ['D grad(M+pi)','conv(U)', 'D grad(M)','fDU','Cd V|V|','Ah lap(V)','Av(U-U2)/H','0','w V','sponge','D grad(pi)']
+    for i in range(11):     
+        ds.vortterms[t0:].mean(dim="time")[i].plot.pcolormesh(ax=axises.flatten()[i],vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
+        axises.flatten()[i].set_title(titles[i])
+    dx = (ds.x.values[1]-ds.x.values[0])
+    dy = (ds.y.values[1]-ds.y.values[0])
+    X,Y = np.meshgrid(ds.x.values,ds.y.values)
+    
+    c = axises.flatten()[-1].pcolormesh(X,Y,ds.vortterms.sum(axis=1).mean(dim="time"),vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
+    c = axises.flatten()[0].pcolormesh(X,Y,(ds.vortterms[:,2]+ds.vortterms[:,10]).mean(dim="time"),vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
+    axises.flatten()[-1].set_title(titles[-1])
+    plt.colorbar(c,ax=axises.flatten()[-1])
+    plt.show()
+
+def PVplot(ds):
+    f = -1.37e-4
+    Cd = 2.5e-3
+    t0=10
+    u2 = ds.U2u[t0:].mean(dim="time").values
+    v2 = ds.V2v[t0:].mean(dim="time").values
+    dx = (ds.x.values[1]-ds.x.values[0])
+    dy = (ds.y.values[1]-ds.y.values[0])
+    h2 = ds.D2[t0:].mean(dim="time").values
+    X,Y = np.meshgrid(ds.x.values,ds.y.values)
+    relvort = (np.roll(v2,-1,axis=1)-np.roll(v2,1,axis=1))/dx - (np.roll(u2,-1,axis=0)-np.roll(u2,1,axis=0))/dy
+    fig, (ax1,ax2) = plt.subplots(1,2)
+    ax1.pcolormesh(X,Y,relvort,vmin=-8e-6,vmax=8e-6,cmap="RdBu_r")
+    ax2.pcolormesh(X,Y,(f+relvort)/h2,vmin=-4e-6,vmax=4e-6,cmap="RdBu_r")
+    plt.show()
+
+
+ 
+#PVplot(ds)
+
+vortBudget(ds)
+
+
+#dsbed = xr.open_dataset("../input/mitgcm.nc")
 #M = ds.RL[t0:].mean(dim="time").values*9.8+ds.TWtermav[t0:].mean(dim="time")#0.0003*(ds.D2[t0:].mean(dim="time").values+bed)
-M = ds.RL[t0:].mean(dim="time").values+ds.TWtermav[t0:].mean(dim="time")#0.0003*(ds.D2[t0:].mean(dim="time").values+bed)
-M = 0*ds.RL[t0:].mean(dim="time").values+0*ds.TWtermav[t0:].mean(dim="time")#0.0003*(ds.D2[t0:].mean(dim="time").values+bed)
-M = (ds.RL[t0:].mean(dim="time").values + ds.TWtermav[t0:].mean(dim="time").values)
-
-
-################################3
-#fig, (ax1,ax2) = plt.subplots(1,2)
-#c = ax1.imshow(ds.RL[t0:].mean(dim="time").values)
-#plt.colorbar(c, ax=ax1)
-#c = ax2.imshow(ds.TWtermav[t0:].mean(dim="time").values)
-#plt.colorbar(c, ax=ax2)
-#plt.show()
-#################################3
-#fig, (ax1,ax2) = plt.subplots(1,2)
-#
-#dMdx = (-M+np.roll(M,-1,axis=1))/dx
-#dMdy = (-M+np.roll(M,-1,axis=0))/dy
-#
-#c = ax1.imshow(dMdx,vmin=-0.001,vmax=0.001,cmap="RdBu")
-#plt.colorbar(c, ax=ax1)
-#c = ax2.imshow(dMdy,vmin=-0.001,vmax=0.001,cmap="RdBu")
-##plt.colorbar(c, ax=ax2)
-#plt.show()
+# M = ds.RL[t0:].mean(dim="time").values+ds.TWtermav[t0:].mean(dim="time")#0.0003*(ds.D2[t0:].mean(dim="time").values+bed)
+# M = 0*ds.RL[t0:].mean(dim="time").values+0*ds.TWtermav[t0:].mean(dim="time")#0.0003*(ds.D2[t0:].mean(dim="time").values+bed)
+# M = (ds.RL[t0:].mean(dim="time").values + ds.TWtermav[t0:].mean(dim="time").values)
 
 
 
+# dMdx = (-M+np.roll(M,-1,axis=1))/dx
+# dMdy = (-M+np.roll(M,-1,axis=0))/dy
 
-#M = 0.03*(ds.D2[t0:].mean(dim="time").values+bed)
-breakpoint()
-fig, (ax1,ax2,ax3) = plt.subplots(1,3)
+# honu = (h2+np.roll(h2,-1,axis=1))/2
 
-dMdx = (-M+np.roll(M,-1,axis=1))/dx
-dMdy = (-M+np.roll(M,-1,axis=0))/dy
+# honv = (h2+np.roll(h2,-1,axis=0))/2
 
-honu = (h2+np.roll(h2,-1,axis=1))/2
-
-honv = (h2+np.roll(h2,-1,axis=0))/2
-
-intface = -((-dMdx*honu) + np.roll((dMdx*honu),-1,axis=0))/dy + ((-dMdy*honv) + np.roll((dMdy*honv),-1,axis=1))/dx
-#intface = dMdx+dMdy
-
-#dMdx = (dMdx+np.roll(dMdx,-1,axis=1))/2
-#dMdy = (dMdy+np.roll(dMdy,-1,axis=0))/2
-
-#dh2dx = (h2-np.roll(h2,1,axis=1))/dx
-#dh2dy = (h2-np.roll(h2,1,axis=0))/dy
-
-#dh2dx = (dh2dx+np.roll(dh2dx,-1,axis=1))/2
-#dh2dy = (dh2dy+np.roll(dh2dy,-1,axis=0))/2
-
-dhdx = (-h2+np.roll(h2,-1,axis=1))/dx
-dhdy = (-h2+np.roll(h2,-1,axis=0))/dy
-
-u2mag = np.sqrt(u2**2+v2**2)
-curl = (-u2*u2mag+np.roll(u2*u2mag,-1,axis=0))/dy
-curl2 = (-v2*u2mag+np.roll(v2*u2mag,-1,axis=1))/dx
-curl = -curl+curl2
-X,Y = np.meshgrid(ds.x.values,ds.y.values)
-ax1.pcolormesh(X,Y,f*(ds.ent2+ds.entr-ds.detr)[t0:].mean(dim="time")/(60*60*24*365),vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
-#ax2.pcolormesh(X,Y,intface,vmin=-8e-7,vmax=8e-7,cmap="RdBu_r")
-ax2.pcolormesh(X,Y,(u2*dhdx + v2*dhdy)*(f**1),vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
-ax3.pcolormesh(X,Y,Cd*curl,vmin=-8e-9,vmax=8e-9,cmap="RdBu_r")
-plt.show()
-#ax3.imshow(Cd*ds.U2[10:].mean(dim="time"))
-
-
+# intface = -((-dMdx*honu) + np.roll((dMdx*honu),-1,axis=0))/dy + ((-dMdy*honv) + np.roll((dMdy*honv),-1,axis=1))/dx
 

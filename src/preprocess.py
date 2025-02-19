@@ -475,6 +475,7 @@ def initialise_vars(object):
     object.V2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.D = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.D2 = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
+    object.vortterms = np.zeros((11,object.ny+2,object.nx+2)).astype('float64')
     object.T = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     object.S = np.zeros((3,object.ny+2,object.nx+2)).astype('float64')
     
@@ -656,19 +657,17 @@ def prepare_output(object):
         object.dsav = object.dsav.assign_coords({'yv':object.yv_full})
     if object.lonlat:
         object.dsav = object.dsav.assign_coords({'lon':object.lon,'lat':object.lat})
+    if object.save_vortterms:
+        object.dsav = object.dsav.assign_coords({'term':range(11)})
 
 
 
-    if object.save_Ut:
-        object.TWtermav = np.zeros((object.ny_full,object.nx_full))
-        object.dsav['TWtermav'] = (['y','x'], object.TWtermav.astype('float64'))
-        object.dsav['TWtermav'].attrs['name'] = 'TWterm'
-        object.dsav['TWtermav'].attrs['units'] = 'm'
+    if object.save_vortterms:
 
-        object.coriolisav = np.zeros((object.ny_full,object.nx_full))
-        object.dsav['coriolisav'] = (['y','x'], object.coriolisav.astype('float64'))
-        object.dsav['coriolisav'].attrs['name'] = 'stretching term'
-        object.dsav['coriolisav'].attrs['units'] = 'm'
+        object.vorttermsav = np.zeros((11,object.ny_full,object.nx_full))
+        object.dsav['vortterms'] = (['term','y','x'], object.vorttermsav.astype('float64'))
+        object.dsav['vortterms'].attrs['name'] = 'Vorticity terms'
+        object.dsav['vortterms'].attrs['units'] = 'm'
 
 
 

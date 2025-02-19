@@ -1,6 +1,6 @@
 [Run]
 name = "ref"   # Run name
-days = 200        # [days] run duration
+days = 365        # [days] run duration
 
 [Time]
 dt = 100        # [s] timestep
@@ -10,7 +10,8 @@ saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
-filename = "./input/mitgcmx1point4.nc"  # File containing geometry input
+#filename = "./input/mitgcmx3.nc"  # File containing geometry input
+filename = "./input/mitgcm.nc"  # File containing geometry input
 maskoption = "ISOMIP"                # Choice for mask definition, choose from 'BM', 'UFEMISM', 'IMAUICE', and 'ISOMIP'
 geomyear = false			# Time index of geometry input
 lonlat = false               # Include longitude latitude in output files
@@ -43,7 +44,7 @@ results = "./output/"  # Main results directory in which rundirs are placed
 
 [Filenames]
 restartfile = ""#"./results/restart/CrossDots_0.5_tanh_Tdeep0.4_ztcl-500_001.nc"  # Restartfile
-#restartfile = "output/ref_2025-02-12_longer/restart_latest.nc"
+#restartfile = "output/ref_2025-02-14_long4x/restart_latest.nc"
 logfile = "log.txt" # Log file
 
 [Initialisation]
@@ -64,7 +65,8 @@ gamTfix   = 0.00018    # []          Turbulent exchange coefficient. If False: c
 #Tuning
 Cd        = 2.5e-3    # []          drag coefficient
 Cdtop     = 1.1e-3    # []          Drag coefficient in Ustar
-Ah        = 200        # [m^2/s]     Laplacian viscosity
+#Ah        = 10        # [m^2/s]     Laplacian viscosity for 3x grid scale
+Ah        = 100        # [m^2/s]     Laplacian viscosity for 3x grid scale
 Av        = 1e-4
 Kh        = 1        # [m^2/s]     Diffusivity
 entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Holland' or 'Gaspar'
