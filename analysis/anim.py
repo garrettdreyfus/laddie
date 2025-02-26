@@ -11,10 +11,10 @@ import numpy
 
 
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-26_noavrestart/','/home/garrett/Projects/laddie/output/ref_2024-11-26_restart24/']
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-27_w100/']
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-24_nosponge/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-28_zootopia/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-03_momentumentrain/']
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
+#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-12-02_tenthtau/']
 
 file_pattern = re.compile(r'.*?(\d+).*?')
@@ -93,7 +93,7 @@ def frame_func_pv( data,t ):
 
 
 
-anim = True
+anim = False
 if anim:
 
     dx = (ds.x.values[1]-ds.x.values[0])
@@ -101,6 +101,10 @@ if anim:
 
     ds['relvort'] = (ds.T.dims,(np.roll(ds.V2v,-1,axis=1)-np.roll(ds.V2v,1,axis=1))/dx - (np.roll(ds.U2u,-1,axis=0)-np.roll(ds.U2u,1,axis=0))/dy)
     ds['pv'] = (ds.T.dims,(ds.relvort.data-1.37e-4)/ds.D2.data)
+
+    xAnimate.make_animation( ds.U2t, fp_out = './U2.mp4',
+                            anim_dim = 'time', fps=2,
+                            frame_func = frame_func_v)
 
     xAnimate.make_animation( ds.relvort, fp_out = './RELVORT.mp4',
                              anim_dim = 'time', fps=2,
@@ -113,9 +117,6 @@ if anim:
 
 
 
-    xAnimate.make_animation( ds.TWtermav, fp_out = './Twterm.mp4',
-                             anim_dim = 'time', fps=2,
-                             frame_func = frame_func_twterm)
 
     xAnimate.make_animation( ds.melt, fp_out = './melt.mp4',
                              anim_dim = 'time',fps=2,
@@ -125,9 +126,6 @@ if anim:
                             anim_dim = 'time',fps=2,
                             frame_func = frame_func_v)
     ##
-    xAnimate.make_animation( ds.U2t, fp_out = './U2.mp4',
-                            anim_dim = 'time', fps=2,
-                            frame_func = frame_func_v)
     #
     xAnimate.make_animation( ds.Vt, fp_out = './V.mp4',
                             anim_dim = 'time',fps=2,
@@ -159,9 +157,9 @@ def moving_average(data, window_size):
 #ds.melt.where(ds.y<150000).where(ds.time>20).mean(dim="x").mean(dim="y").plot()
 #plt.show()
 X,Y = np.meshgrid(ds.x.values/1000,ds.y.values/1000)
-U2 = ds.U2t[100:].mean(dim="time").values
-V2 = ds.V2t[100:].mean(dim="time").values
-plt.pcolormesh(X,Y,ds.melt[100:].mean(dim="time").where(ds.y<150000),vmin=0,vmax=60,cmap="Reds")
+U2 = ds.U2t[12:].mean(dim="time").values
+V2 = ds.V2t[12:].mean(dim="time").values
+plt.pcolormesh(X,Y,ds.melt[12:].mean(dim="time").where(ds.y<150000),vmin=0,vmax=60,cmap="Reds")
 cbar = plt.colorbar()
 cbar.set_label("(m/yr)",fontsize=16)
 box_kernel = Box2DKernel(5,mode="center")

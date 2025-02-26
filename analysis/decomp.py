@@ -33,7 +33,7 @@ def dsFromPath(folderpaths):
     return xr.combine_nested(datasets,concat_dim="time")
 
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-18_fixcurl/']
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-25/']
 
 ds = dsFromPath(folderpaths)
 def vortBudgetBasic(ds):
@@ -90,9 +90,9 @@ def vortBudgetBasic(ds):
     plt.show()
 
 def vortBudget(ds):
-    t0=12
+    t0=7
     fig, axises = plt.subplots(3,4)
-    titles = ['D grad(M+pi)','conv(U)', 'D grad(M)','fDU','Cd V|V|','Ah lap(V)','Av(U-U2)/H','0','w V','sponge','D grad(pi)']
+    titles = ['DUdt','conv(U)', 'D grad(M)','fD<V,U>','Cd U|U|','Ah lap(V)','Av(U-U2)/H','D grad(M) + D grad(pi)','w V','sponge','D grad(pi)']
     for i in range(11):     
         ds.vortterms[t0:].mean(dim="time")[i].plot.pcolormesh(ax=axises.flatten()[i],vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
         axises.flatten()[i].set_title(titles[i])
@@ -101,9 +101,29 @@ def vortBudget(ds):
     X,Y = np.meshgrid(ds.x.values,ds.y.values)
     
     c = axises.flatten()[-1].pcolormesh(X,Y,ds.vortterms.sum(axis=1).mean(dim="time"),vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
-    c = axises.flatten()[0].pcolormesh(X,Y,(ds.vortterms[:,2]+ds.vortterms[:,10]).mean(dim="time"),vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
-    axises.flatten()[-1].set_title(titles[-1])
+    c = axises.flatten()[7].pcolormesh(X,Y,(ds.vortterms[:,2]+ds.vortterms[:,10]).mean(dim="time"),vmin=-5e-8,vmax=5e-8,cmap="RdBu_r")
+    axises.flatten()[-1].set_title("Vorticity sum")
+    axises.flatten()[7].set_title(titles[7])
     plt.colorbar(c,ax=axises.flatten()[-1])
+    plt.show()
+
+def simpleVortBudget(ds):
+    t0=2
+    fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2,2)
+    titles = ['conv(U)', 'fD<V,U>','Cd U|U|','D grad(pi) + D grad(M)']
+
+    ds.vortterms[t0:].mean(dim="time")[1].plot.pcolormesh(ax=ax1,vmin=-5e-9,vmax=5e-9,cmap="RdBu_r")
+    ax1.set_title(titles[0])
+
+    ds.vortterms[t0:].mean(dim="time")[3].plot.pcolormesh(ax=ax2,vmin=-5e-9,vmax=5e-9,cmap="RdBu_r")
+    ax2.set_title(titles[1])
+
+    ds.vortterms[t0:].mean(dim="time")[4].plot.pcolormesh(ax=ax3,vmin=-5e-9,vmax=5e-9,cmap="RdBu_r")
+    ax3.set_title(titles[2])
+
+    (ds.vortterms[:,2]+ds.vortterms[:,10])[t0:].mean(dim="time").plot.pcolormesh(ax=ax4,vmin=-5e-9,vmax=5e-9,cmap="RdBu_r")
+    ax4.set_title(titles[3])
+
     plt.show()
 
 def PVplot(ds):
@@ -126,6 +146,7 @@ def PVplot(ds):
  
 #PVplot(ds)
 
+#simpleVortBudget(ds)
 vortBudget(ds)
 
 

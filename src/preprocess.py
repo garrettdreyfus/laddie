@@ -304,10 +304,11 @@ def create_mask(object):
     #plt.imshow(object.taus)
     #plt.colorbar()
     #plt.show()
-    object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
-    #plt.imshow(object.taus)
-    #plt.colorbar()
-    #plt.show()
+    # object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
+    # plt.imshow(object.taus)
+    # plt.colorbar()
+    # plt.show()
+    object.taus=object.taus*0
 
     #plt.imshow(object.smask/(object.taus))
     #plt.colorbar()

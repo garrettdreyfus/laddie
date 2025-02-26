@@ -10,7 +10,7 @@ saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
-filename = "./input/mitgcm.nc"  # File containing geometry input
+filename = "./input/mitgcmx3.nc"  # File containing geometry input
 #filename = "./input/mitgcm.nc"  # File containing geometry input
 maskoption = "ISOMIP"                # Choice for mask definition, choose from 'BM', 'UFEMISM', 'IMAUICE', and 'ISOMIP'
 geomyear = false			# Time index of geometry input
@@ -66,10 +66,10 @@ gamTfix   = 0.00018    # []          Turbulent exchange coefficient. If False: c
 #Tuning
 Cd        = 2.5e-3    # []          drag coefficient
 Cdtop     = 1.1e-3    # []          Drag coefficient in Ustar
-Ah        = 100        # [m^2/s]    
+Ah        = 33        # [m^2/s]     Laplacian viscosity for 3x grid scale
 #Ah        = 100        # [m^2/s]     Laplacian viscosity for 3x grid scale
 Av        = 1e-4
-Kh        = 100        # [m^2/s]     Diffusivity
+Kh        = 33        # [m^2/s]     Diffusivity
 entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Holland' or 'Gaspar'
 mu        = 2.5       # []          Parameter in Gaspar entrainment. Gaspar: 0.5; Gladish: 2.5
 maxdetr   = 0.0        # [m/s]       Cutoff detrainment rate, only effective when O(1e-3)
