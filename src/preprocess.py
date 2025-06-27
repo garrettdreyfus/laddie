@@ -27,7 +27,17 @@ def create_rundir(object,configfile):
 
     #Derive desired run directory:
     object.rundir = os.path.join(object.resultdir,object.name)
-    if object.forcenewdir or os.path.isdir(object.rundir) == False:
+    if True: 
+        n = input("Unique name: ")
+        try:
+            #Create rundirectory with current date and incremental number. Give up after 100 tries
+            object.rundir = os.path.join(object.resultdir,dt.datetime.today().strftime(f"{object.name}_%Y-%m-%d_{n}"))
+            os.mkdir(object.rundir)
+            #break
+        except:
+            print("something weird with filenaming")
+            exit()
+    elif object.forcenewdir or os.path.isdir(object.rundir) == False:
         try:
             #Create rundirectory
             os.mkdir(object.rundir)

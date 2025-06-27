@@ -33,7 +33,7 @@ def dsFromPath(folderpaths):
     return xr.combine_nested(datasets,concat_dim="time")
 
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-25/']
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-27_constantlayer2/']
 
 ds = dsFromPath(folderpaths)
 def vortBudgetBasic(ds):
@@ -90,7 +90,7 @@ def vortBudgetBasic(ds):
     plt.show()
 
 def vortBudget(ds):
-    t0=7
+    t0=15
     fig, axises = plt.subplots(3,4)
     titles = ['DUdt','conv(U)', 'D grad(M)','fD<V,U>','Cd U|U|','Ah lap(V)','Av(U-U2)/H','D grad(M) + D grad(pi)','w V','sponge','D grad(pi)']
     for i in range(11):     

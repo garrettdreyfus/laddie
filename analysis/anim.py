@@ -11,7 +11,9 @@ import numpy
 
 
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-26_noavrestart/','/home/garrett/Projects/laddie/output/ref_2024-11-26_restart24/']
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-24_nosponge/']
+#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-24_nosponge/']
+
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-05-30_newnewnewnomelt/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-28_zootopia/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-03_momentumentrain/']
 #folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
@@ -39,13 +41,13 @@ ds = xr.combine_nested(datasets,concat_dim="time")
 
 def frame_func_v( data,t ):
     f,a = plt.subplots(1,1)
-    data.plot.pcolormesh(vmin=-0.2,vmax=0.2,cmap="RdBu_r")
+    data.plot.pcolormesh(vmin=-0.15,vmax=0.15,cmap="RdBu_r")
     f.suptitle(t)
     return f
 
 def frame_func_d( data,t ):
     f,a = plt.subplots(1,1)
-    data.plot.pcolormesh(vmin=10,vmax=100,cmap="magma")
+    data.plot.pcolormesh(vmin=1,vmax=100,cmap="magma")
     f.suptitle(t)
     return f
 
@@ -93,7 +95,7 @@ def frame_func_pv( data,t ):
 
 
 
-anim = False
+anim = True
 if anim:
 
     dx = (ds.x.values[1]-ds.x.values[0])
@@ -157,8 +159,8 @@ def moving_average(data, window_size):
 #ds.melt.where(ds.y<150000).where(ds.time>20).mean(dim="x").mean(dim="y").plot()
 #plt.show()
 X,Y = np.meshgrid(ds.x.values/1000,ds.y.values/1000)
-U2 = ds.U2t[12:].mean(dim="time").values
-V2 = ds.V2t[12:].mean(dim="time").values
+U2 = ds.U2t[12:22].mean(dim="time").values
+V2 = ds.V2t[12:22].mean(dim="time").values
 plt.pcolormesh(X,Y,ds.melt[12:].mean(dim="time").where(ds.y<150000),vmin=0,vmax=60,cmap="Reds")
 cbar = plt.colorbar()
 cbar.set_label("(m/yr)",fontsize=16)

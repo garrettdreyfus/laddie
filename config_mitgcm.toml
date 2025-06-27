@@ -1,9 +1,9 @@
 [Run]
 name = "ref"   # Run name
-days = 365        # [days] run duration
+days = 100        # [days] run duration
 
 [Time]
-dt = 100        # [s] timestep
+dt = 500        # [s] timestep
 restday = 1    # [days] interval to save restartfile
 #saveday = 1    # [days] interval to save model output
 saveday = 1    # [days] interval to save model output
@@ -74,7 +74,7 @@ entpar    = "Gaspar"  #             Entrainment parameterisation, either 'Hollan
 mu        = 2.5       # []          Parameter in Gaspar entrainment. Gaspar: 0.5; Gladish: 2.5
 maxdetr   = 0.0        # [m/s]       Cutoff detrainment rate, only effective when O(1e-3)
 #Numerical parameters
-minD      = 1.0        # [m]         Cutoff thickness
+minD      = 10.0        # [m]         Cutoff thickness
 vcut      = 1.414     # [m/s]       Cutoff velocity U and V
 
 [EOS]

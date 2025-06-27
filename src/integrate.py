@@ -102,7 +102,7 @@ def generate_stars(object,delt):
     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
     object.Ustar = object.U[0,:,:] \
                     + div0((-object.U[1,:,:] * ip_t(object,object.dDdt) \
-                    +  convU(object) \
+                    + convU(object) \
                     #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
 
                     ## PRESSURE TERMS
