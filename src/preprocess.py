@@ -8,6 +8,7 @@ from integrate import updatesecondary,integrate
 from tools import tryread, extrapolate_initvals
 from physics import update_ambientfields
 from scipy.ndimage import gaussian_filter
+import ipdb
 
 
 def create_rundir(object,configfile):
@@ -240,6 +241,9 @@ def create_mask(object):
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
+    ipdb.set_trace()
+    object.boundary = object.icemask*0
+    object.boundary[-1,:]=1
 
     #Define ocean neighbour masks, used to compute gradients and boundaries (ice shelf front)
     #ym1 indicates mask shifted by -1 grid cell in the y-direction; in other words: the ocean mask in the North
@@ -247,6 +251,11 @@ def create_mask(object):
     object.ocnyp1      = np.roll(object.ocn, 1,axis=0)
     object.ocnxm1      = np.roll(object.ocn,-1,axis=1)
     object.ocnxp1      = np.roll(object.ocn, 1,axis=1)
+
+    object.boundaryym1      = np.roll(object.ocn,-1,axis=0)
+    object.boundaryyp1      = np.roll(object.ocn, 1,axis=0)
+    object.boundaryxm1      = np.roll(object.ocn,-1,axis=1)
+    object.boundaryxp1      = np.roll(object.ocn, 1,axis=1)
     
     #If required, smoothen ice shelf front by converting some grid cells from ice shelf to ocean
     if object.correctisf:
@@ -299,6 +308,7 @@ def create_mask(object):
         object.taus+=isftemp
     object.smask = np.logical_and(object.ocn==1,~object.icemask)
     object.taus = object.taus-buf
+
     object.smask[object.taus<0]=0
 
     tsponge = (24*60*60)
@@ -311,14 +321,13 @@ def create_mask(object):
     #plt.imshow(object.smask)
     #plt.show()
     object.taus[object.smask] = (sw-object.taus[object.smask])
-    #plt.imshow(object.taus)
-    #plt.colorbar()
-    #plt.show()
+    plt.imshow(object.taus)
+    plt.colorbar()
+    plt.show()
     # object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
     # plt.imshow(object.taus)
     # plt.colorbar()
     # plt.show()
-    object.taus=object.taus*0
 
     #plt.imshow(object.smask/(object.taus))
     #plt.colorbar()

@@ -80,15 +80,7 @@ def cutforstability(object):
     object.V2[2,:,:] = np.where(object.V2[2,:,:]> object.vcut, object.vcut,object.V2[2,:,:])
     object.V2[2,:,:] = np.where(object.V2[2,:,:]<-object.vcut,-object.vcut,object.V2[2,:,:])   
 
-# [X] convD2
-# [X] dD2dt
-# [X] convU2
-# [X] D2xm1
-# [X] D2xp1
-# [X] D2ym1
-# [X] D2xp1
-# [X] lapU2
-# [X] lapV2
+
 def intD(object,delt):
     """Integrate D. Multipy RHS of dD/dt with delt (= 2x dt for LeapFrog)"""
     object.D[2,:,:] = object.D[0,:,:] \
@@ -98,17 +90,14 @@ def intD(object,delt):
                     ) * object.tmask * delt    
 
 def generate_stars(object,delt):
-    #hello
     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
     object.Ustar = object.U[0,:,:] \
                     + div0((-object.U[1,:,:] * ip_t(object,object.dDdt) \
                     + convU(object) \
-                    #+  -object.g*ip_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=1)-object.drho)/object.dx \
 
                     ## PRESSURE TERMS
                     ### --------------------
                     - object.g*ip_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=1)-object.drho)/(object.dx) \
-                            
                     ### --------------------
 
                     +  object.f*ip_t(object,object.D[1,:,:]*object.Vjm) \
@@ -121,16 +110,12 @@ def generate_stars(object,delt):
                     ),ip_t(object,object.D[1,:,:])) * object.umask * delt
 
     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
-    #plt.imshow(- .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb+object.zb-object.D[1,:,:]))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy)
 
     object.Vstar = object.V[0,:,:] \
                     +div0((-object.V[1,:,:] * jp_t(object,object.dDdt) \
                     + convV(object) \
-                    #+ object.g*jp_t(object,object.D[1,:,:]*object.zb)*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
-                    #+ -.5*object.g*jp_t(object,object.D[1,:,:])**2*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
                     #PRESSURE TERMS
                     #-------------------------
-                    #- .5*object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/object.dy \
                     - object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/(object.dy) \
                     #-------------------------
 
@@ -424,7 +409,6 @@ def surface_pressure(object,delt,method="mg"):
         pi = object.RL
         iters = 0
         pi = SOR(pi,pi_rhs,object.Osum,object.Os,object.Ow,rp,pi_tol,pi.shape[0],pi.shape[1],object.tmask)
-    #pi*0
 
     pi_x = -delt*(np.roll(pi,-1,axis=1)-pi)/(object.dx)*object.umask
     pi_x[np.roll(object.tmask,-1,axis=1)!=object.tmask]=0
