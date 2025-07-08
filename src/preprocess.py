@@ -8,6 +8,7 @@ from integrate import updatesecondary,integrate
 from tools import tryread, extrapolate_initvals
 from physics import update_ambientfields
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage import binary_dilation as bd
 import ipdb
 
 
@@ -241,9 +242,10 @@ def create_mask(object):
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
-    ipdb.set_trace()
     object.boundary = object.icemask*0
-    object.boundary[-1,:]=1
+    object.boundary[-2:,:]=1
+    ipdb.set_trace()
+
 
     #Define ocean neighbour masks, used to compute gradients and boundaries (ice shelf front)
     #ym1 indicates mask shifted by -1 grid cell in the y-direction; in other words: the ocean mask in the North
@@ -252,10 +254,10 @@ def create_mask(object):
     object.ocnxm1      = np.roll(object.ocn,-1,axis=1)
     object.ocnxp1      = np.roll(object.ocn, 1,axis=1)
 
-    object.boundaryym1      = np.roll(object.ocn,-1,axis=0)
-    object.boundaryyp1      = np.roll(object.ocn, 1,axis=0)
-    object.boundaryxm1      = np.roll(object.ocn,-1,axis=1)
-    object.boundaryxp1      = np.roll(object.ocn, 1,axis=1)
+    object.boundaryym1      = np.roll(object.boundary,-1,axis=0)
+    object.boundaryyp1      = np.roll(object.boundary, 1,axis=0)
+    object.boundaryxm1      = np.roll(object.boundary,-1,axis=1)
+    object.boundaryxp1      = np.roll(object.boundary, 1,axis=1)
     
     #If required, smoothen ice shelf front by converting some grid cells from ice shelf to ocean
     if object.correctisf:
@@ -299,35 +301,21 @@ def create_mask(object):
     object.smask = np.ones(object.isf.shape)
     object.taus = np.ones(object.isf.shape)
     isftemp = np.ones(object.isf.shape)
-    isftemp[:] = object.isf
+    isftemp[:] = object.boundary
     buf = 10
-    sw = 100+buf
-    mag=500
+    sw = 30+buf
     for i in range(sw):
         isftemp = bd(isftemp,mask=object.ocn)
         object.taus+=isftemp
     object.smask = np.logical_and(object.ocn==1,~object.icemask)
-    object.taus = object.taus-buf
 
-    object.smask[object.taus<0]=0
+    # object.smask[:]=0
 
-    tsponge = (24*60*60)
-    #object.smask[object.smask!=1] = mag*(np.tanh(np.pi*((sw-object.smask[object.smask!=1]+2)/sw - 0.5))+1)*2
-    # plt.imshow(1-np.tanh((object.smask+sw/2)/sw))
-    # plt.colorbar()
-    # plt.show()
-    #object.smask[object.smask==1]=0
-    #object.smask = np.maximum(object.smask,1)
-    #plt.imshow(object.smask)
-    #plt.show()
-    object.taus[object.smask] = (sw-object.taus[object.smask])
-    plt.imshow(object.taus)
-    plt.colorbar()
-    plt.show()
-    # object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
-    # plt.imshow(object.taus)
-    # plt.colorbar()
-    # plt.show()
+    tsponge = (1*60*60)
+    object.smask[object.taus<=1]=0
+    ipdb.set_trace()
+    object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
+    object.taus = object.taus*object.smask
 
     #plt.imshow(object.smask/(object.taus))
     #plt.colorbar()
@@ -505,8 +493,6 @@ def initialise_vars(object):
     #Remove positive values of ice shelf draft. Set shallowest ice shelf draft to 1 meters
     object.zb = np.where(np.logical_and(object.tmask==1,object.zb>-1),-1,object.zb)
     object.zb = gaussian_filter(object.zb,sigma=1)
-    plt.imshow(object.zb)
-    plt.show()
 
     object.H = object.zb-object.B
     #object.B[object.H<10**3]=object.zb[object.H<10**3]-10**3
@@ -611,17 +597,19 @@ def init_from_scratch(object):
 
 
 
-    object.D += object.Dinit*object.tmask
+    # object.D += object.Dinit*object.tmask
 
-    #object.D[0] = 250+object.zb
-    #object.D[0] = np.maximum(object.D[0],object.Dinit)
-    #object.D[0] = np.minimum(object.D[0],object.H-object.minD)
-    ###object.D[1] = 250+object.zb
-    #object.D[1] = np.maximum(object.D[1],object.Dinit)
-    #object.D[1] = np.minimum(object.D[1],object.H-object.minD)
-    #object.D[2] = 250+object.zb
-    #object.D[2] = np.maximum(object.D[2],object.Dinit)
-    #object.D[2] = np.minimum(object.D[2],object.H-object.minD)
+    ipdb.set_trace()
+    # object.D[0] = (object.Dinit+object.zb)*object.tmask
+    # # object.D[0] = gaussian_filter(object.D[0],sigma=2)
+    # object.D[0] = np.maximum(object.D[0],object.minD)
+    # object.D[0] = np.minimum(object.D[0],object.H-object.minD)
+    # object.D[0] = object.D[0]*object.tmask
+    object.D += object.Dinit*object.tmask
+    object.D[0] = np.maximum(object.D[0],object.minD)
+    object.D[0] = np.minimum(object.D[0],object.H-object.minD)
+    object.D[1][:] = object.D[0][:]
+    object.D[2][:] = object.D[2][:]
 
 
     object.D2 += object.H-object.D

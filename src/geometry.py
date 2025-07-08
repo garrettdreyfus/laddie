@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 import sys
+from scipy.ndimage import binary_dilation as bd
 
 def read_geom(object):
     #Read input file

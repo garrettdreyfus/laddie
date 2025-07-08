@@ -448,10 +448,11 @@ def surface_pressure(object,delt,method="mg"):
     #breakpoint()
 
     object.pressure_solves+=1
-    if (object.pressure_solves)%300 ==1 and debug:
+    if (object.pressure_solves)%200 ==1 and debug:
         fig,((ax1,ax2,ax3),(ax4,ax5,ax6),(ax7,ax8,ax9)) = plt.subplots(3,3)
         X,Y = np.meshgrid(range(object.nx+2)*object.dx,range(object.ny+2)*object.dy)
         im = ax1.pcolormesh(X,Y,object.D[2]*object.tmask)
+        plt.colorbar(im,ax=ax1)
         #ax1.quiver(object.U[2],object.V[2])
         #plt.colorbar(im,ax=ax1)
         im = ax2.pcolormesh(X,Y,object.U[2]*object.umask)
