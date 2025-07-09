@@ -173,6 +173,7 @@ def read_config(object):
         object.cl   = tryread(object,"Parameters","cl",float,(0,1e20),default=.01775)
     object.maxdetr  = tryread(object,"Parameters","maxdetr",float,(0,1e20))
     object.minD     = tryread(object,"Parameters","minD",float,(0,1e20))
+    object.use_mom_adv     = tryread(object,"Parameters","use_mom_adv",bool,default=True)
     object.vcut     = tryread(object,"Parameters","vcut",float,(0,1e20),default=1.414) 
     
     object.alpha    = tryread(object,"EOS","alpha",float,(0,1e20))

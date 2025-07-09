@@ -50,7 +50,7 @@ restartfile = "#"#"./results/restart/CrossDots_0.5_tanh_Tdeep0.4_ztcl-500_001.nc
 logfile = "log.txt" # Log file
 
 [Initialisation]
-Dinit = 10.0       # [m]         Initial uniform thickness D
+Dinit = 1.0       # [m]         Initial uniform thickness D
 fromrestart = false    # Try starting from an existing restart file
 
 [Parameters]
@@ -78,6 +78,7 @@ maxdetr   = 0.0        # [m/s]       Cutoff detrainment rate, only effective whe
 #Numerical parameters
 minD      = 10.0        # [m]         Cutoff thickness
 vcut      = 1.414     # [m/s]       Cutoff velocity U and V
+use_mom_adv = true
 
 [EOS]
 #Parameters related to the equation of state and the freezing point

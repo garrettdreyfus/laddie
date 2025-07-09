@@ -93,7 +93,7 @@ def generate_stars(object,delt):
     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
     object.Ustar = object.U[0,:,:] \
                     + div0((-object.U[1,:,:] * ip_t(object,object.dDdt) \
-                    + convU(object) \
+                    + convU(object)*object.use_mom_adv \
 
                     ## PRESSURE TERMS
                     ### --------------------
@@ -113,7 +113,7 @@ def generate_stars(object,delt):
 
     object.Vstar = object.V[0,:,:] \
                     +div0((-object.V[1,:,:] * jp_t(object,object.dDdt) \
-                    + convV(object) \
+                    + convV(object)*object.use_mom_adv \
                     #PRESSURE TERMS
                     #-------------------------
                     - object.g*jp_t(object,object.D[1,:,:]*(object.zb-object.D[1,:,:]/2))*(np.roll(object.drho,-1,axis=0)-object.drho)/(object.dy) \
@@ -130,7 +130,7 @@ def generate_stars(object,delt):
 
     """Integrate U. Multipy RHS of dDU/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
     object.U2terms = np.array([-object.U2[1,:,:] * ip_t(object,object.dD2dt) \
-                    ,  convU2(object) \
+                    ,  convU2(object)*object.use_mom_adv \
                     ,- ip_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=1)-object.TWterm)/(object.dx)\
                     ,  object.f*ip_t(object,object.D2[1,:,:]*object.V2jm) \
                     ,  -object.Cd* object.U2[1,:,:] *(object.U2[1,:,:]**2 + ip(jm(object.V2[1,:,:]))**2)**.5 \
@@ -146,7 +146,7 @@ def generate_stars(object,delt):
 
     """Integrate V. Multipy RHS of dDV/dt, divided by D, with delt (= 2x dt for LeapFrog)"""
     object.V2terms = np.array([-object.V2[1,:,:] * jp_t(object,object.dD2dt) \
-                    , convV2(object) \
+                    , convV2(object)*object.use_mom_adv \
                     ,- jp_t(object,object.D2[1,:,:])*(np.roll(object.TWterm,-1,axis=0)-object.TWterm)/(object.dy)\
                     , -object.f*jp_t(object,object.D2[1,:,:]*object.U2im) \
                     , -object.Cd* object.V2[1,:,:] *(object.V2[1,:,:]**2 + jp(im(object.U2[1,:,:]))**2)**.5 \
