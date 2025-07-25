@@ -243,10 +243,15 @@ def create_mask(object):
     object.grd   = np.where(object.mask==2,1,0)             #Grid cells with grounded ice or bare rock, treated the same
     object.grd   = np.where(object.mask==1,1,object.grd)    #Grid cells with grounded ice or bare rock, treated the same
     object.ocn   = np.where(object.mask==0,1,0)             #Grid cells with ocean
-    object.boundary = object.icemask*0
-    object.boundary[-2:,:]=1
-    ipdb.set_trace()
+    object.boundary = np.zeros(object.mask.shape)
+    object.boundary[:,0] = object.ocn[:,1]
+    object.boundary[:,-1] = object.ocn[:,-2]
+    object.boundary[0,:] = object.ocn[1,:]
+    object.boundary[-1,:] = object.ocn[-2,:]
 
+    plt.imshow(object.boundary)
+    plt.show()
+    ipdb.set_trace()
 
     #Define ocean neighbour masks, used to compute gradients and boundaries (ice shelf front)
     #ym1 indicates mask shifted by -1 grid cell in the y-direction; in other words: the ocean mask in the North
@@ -312,11 +317,12 @@ def create_mask(object):
 
     # object.smask[:]=0
 
-    tsponge = (1*60*60)
+    tsponge = (3*60*60)
     object.smask[object.taus<=1]=0
-    ipdb.set_trace()
     object.taus[object.smask] = (2*tsponge)/(np.tanh(2*np.pi*(object.taus[object.smask]+1-(sw/2))/sw)+1)
     object.taus = object.taus*object.smask
+    
+    ipdb.set_trace()
 
     #plt.imshow(object.smask/(object.taus))
     #plt.colorbar()

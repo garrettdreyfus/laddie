@@ -6,6 +6,7 @@ import geometry as ge
 import forcing as fo
 import tomli
 from time import process_time
+import cProfile
 
 class Laddie():
     """ 
@@ -63,6 +64,7 @@ class Laddie():
             it.updatevars(self)
 
             #Integrate main variables
+            #cProfile.runctx("it.integrate(self)",{"self":self},{"it":it})
             it.integrate(self)
 
             #Limit velocities through threshold cutoff

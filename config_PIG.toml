@@ -3,13 +3,13 @@ name = "PIG"   # Run name
 days = 100        # [days] run duration
 
 [Time]
-dt = 20        # [s] timestep
+dt = 1        # [s] timestep
 restday = 1    # [days] interval to save restartfile
 saveday = 1    # [days] interval to save model output
 diagday = 0.01   # [days] interval to spit out diagnostics
 
 [Geometry]
-filename = "./input/PIGallice.nc"  # File containing geometry input
+filename = "./input/PIG_bm3.nc"  # File containing geometry input
 maskoption = "BM"                # Choice for mask definition, choose from 'BM', 'UFEMISM', 'IMAUICE', and 'ISOMIP'
 #filename = "./input/Ocean1_input_geom_v1.01.nc"
 #maskoption = "ISOMIP"

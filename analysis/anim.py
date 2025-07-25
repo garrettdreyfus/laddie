@@ -8,16 +8,13 @@ from pathlib import Path
 from astropy.convolution import convolve, Box2DKernel
 import xAnimate
 import numpy
+import ipdb
+import cmocean
 
 
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-26_noavrestart/','/home/garrett/Projects/laddie/output/ref_2024-11-26_restart24/']
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-24_nosponge/']
-
-folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-05-30_newnewnewnomelt/']
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-11-28_zootopia/']
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-03_momentumentrain/']
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-02-14_long4x/','/home/garrett/Projects/laddie/output/ref_2025-02-14_long4xcont/']
-#folderpaths = ['/home/garrett/Projects/laddie/output/ref_2024-12-02_tenthtau/']
+folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-07-08_smallerminD/']
+# folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-07-09_no_mom_adv/']
+# folderpaths = ['/home/garrett/Projects/laddie/output/ref_2025-07-09_no_mom_adv_no_melt/']
 
 file_pattern = re.compile(r'.*?(\d+).*?')
 def get_order(file):
@@ -95,7 +92,7 @@ def frame_func_pv( data,t ):
 
 
 
-anim = True
+anim = False
 if anim:
 
     dx = (ds.x.values[1]-ds.x.values[0])
@@ -156,14 +153,19 @@ if anim:
 def moving_average(data, window_size):
     weights = np.ones(window_size) / window_size
     return np.convolve(data, weights, mode='valid')
+
 #ds.melt.where(ds.y<150000).where(ds.time>20).mean(dim="x").mean(dim="y").plot()
 #plt.show()
+fig,ax1 = plt.subplots(1,1,figsize=(12,12))
+
 X,Y = np.meshgrid(ds.x.values/1000,ds.y.values/1000)
-U2 = ds.U2t[12:22].mean(dim="time").values
-V2 = ds.V2t[12:22].mean(dim="time").values
-plt.pcolormesh(X,Y,ds.melt[12:].mean(dim="time").where(ds.y<150000),vmin=0,vmax=60,cmap="Reds")
-cbar = plt.colorbar()
-cbar.set_label("(m/yr)",fontsize=16)
+starttime=150
+U2 = ds.where(ds.time>starttime).U2t.mean(dim="time").values
+V2 = ds.where(ds.time>starttime).V2t.mean(dim="time").values
+# im = ax1.pcolormesh(X,Y,ds.D2.where(ds.time>starttime).mean(dim="time"),cmap=cmocean.cm.deep)
+im = ax1.pcolormesh(X,Y,ds.where(ds.time>starttime).melt.mean(dim="time").where(ds.y<150000),vmin=0,vmax=60,cmap="Reds")
+cbar = plt.colorbar(im,ax=ax1)
+cbar.set_label("Melt (m/yr)",fontsize=16)
 box_kernel = Box2DKernel(5,mode="center")
 
 #X = convolve(X, box_kernel,preserve_nan=True)
@@ -175,7 +177,37 @@ V2 = convolve(V2, box_kernel,preserve_nan=True)
 U2[np.logical_or(U2==0,V2==0)] = np.nan
 V2[np.logical_or(U2==0,V2==0)] = np.nan
  
-plt.quiver(X[::2,::2],Y[::2,::2],U2[::2,::2],V2[::2,::2],scale=1,width=0.0035,color="navy")
-plt.xlabel("X (km)",fontsize=16)
-plt.ylabel("Y (km)",fontsize=16)
+Q = ax1.quiver(X[::2,::2],Y[::2,::2],U2[::2,::2],V2[::2,::2],scale=0.4,width=0.0035,color="navy")
+
+ax1.quiverkey(Q, 115, 40, 0.05,"0.05 (m/s)",angle = 90,coordinates="data")
+
+ax1.set_xlabel("X (km)",fontsize=16)
+ax1.set_ylabel("Y (km)",fontsize=16)
+ax1.set_ylim(20,170)
+ax1.set_xlim(100,300)
+
+plt.show()
+
+fig,ax2 = plt.subplots(1,1,figsize=(9,6))
+
+U = ds.where(ds.time>starttime).Ut.mean(dim="time").values
+V = ds.where(ds.time>starttime).Vt.mean(dim="time").values
+im = ax2.pcolormesh(X,Y,ds.where(ds.time>starttime).melt.mean(dim="time").where(ds.y<150000),vmin=0,vmax=60,cmap="Reds")
+cbar = plt.colorbar(im, ax=ax2)
+cbar.set_label("(m/yr)",fontsize=16)
+box_kernel = Box2DKernel(5,mode="center")
+
+#X = convolve(X, box_kernel,preserve_nan=True)
+#Y = convolve(Y, box_kernel,preserve_nan=True)
+#
+#U = convolve(U, box_kernel,preserve_nan=True)
+#V = convolve(V, box_kernel,preserve_nan=True)
+
+U[np.logical_or(U==0,V==0)] = np.nan
+V[np.logical_or(U==0,V==0)] = np.nan
+ 
+ax2.quiver(X[::2,::2],Y[::2,::2],U[::2,::2],V[::2,::2],scale=1,width=0.0035,color="navy")
+ax2.set_xlabel("X (km)",fontsize=16)
+ax2.set_ylabel("Y (km)",fontsize=16)
+ax2.set_ylim(20,170)
 plt.show()
